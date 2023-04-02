@@ -3,6 +3,7 @@ package main
 import (
 	"api/cmd"
 	"api/coind"
+	"api/db"
 	"api/models"
 	"api/utils"
 	"database/sql"
@@ -14,6 +15,15 @@ import (
 )
 
 func main() {
+
+	err := db.InitDB()
+	if err != nil {
+		utils.WrapErrorLog(fmt.Sprintf("Error opening db: %s", err.Error()))
+		return
+	}
+
+	utils.ReportMessage("DB opened")
+
 	s2, err := cmd.CallString("bash", "-c", "cat /home/dfwplay/.bitcoin/.cookie")
 	if err != nil {
 		utils.WrapErrorLog(err.Error())
@@ -56,28 +66,20 @@ func main() {
 			utils.WrapErrorLog(errJson.Error())
 			return
 		}
+		contentLink := fmt.Sprintf("https://ordinals.com/content/%s", ins.Inscription)
 		addr := info.Decoded.Vout[vout].ScriptPubKey.Address
-		utils.ReportMessage(fmt.Sprintf("result: %s %s %s %s %s", ins.Inscription, txid[0], addr, ins.Location, ins.Explorer))
+		_, err = db.InsertSQl(`INSERT INTO TRANSACTIONS_ORD (tx_id, ord_id, bc_address, link, content_link) 
+									VALUES (?,?, ?, ?, ?)`, txid[0], ins.Inscription, addr, ins.Explorer, contentLink)
+		if err != nil {
+			utils.WrapErrorLog(err.Error())
+			continue
+		}
+
+		//utils.ReportMessage(fmt.Sprintf("result: %s %s %s %s %s", ins.Inscription, txid[0], addr, ins.Location, ins.Explorer))
 
 	}
-	//sv, err := coind.WrapDaemon(daemon, 1, "getwalletinfo")
-	//if err != nil {
-	//	utils.WrapErrorLog(err.Error())
-	//	return
-	//}
-	//var info models.GetWalletInfo
-	//errJson := json.Unmarshal(sv, &info)
-	//if errJson != nil {
-	//	utils.WrapErrorLog(errJson.Error())
-	//	return
-	//}
-	//utils.ReportMessage(fmt.Sprintf("%+v", info))
-	//svv, err := coind.WrapDaemon(daemon, 1, "getbalance")
-	//if err != nil {
-	//	utils.WrapErrorLog(err.Error())
-	//	return
-	//}
-	//utils.ReportMessage(fmt.Sprintf("%s", svv))
+
+	utils.ReportMessage("Inscriptions saved into db")
 
 	time.Sleep(time.Second * 1)
 }
