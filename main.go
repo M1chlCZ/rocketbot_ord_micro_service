@@ -3,35 +3,86 @@ package main
 import (
 	"api/cmd"
 	"api/coind"
-	"api/db"
 	"api/models"
-	"api/utils"
+	"bytes"
 	"database/sql"
 	"encoding/json"
-	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
+
+	"api/db"
+	"api/gServer"
+	"api/utils"
+	"context"
+
+	"fmt"
+	"github.com/gofiber/fiber/v2"
+	"os"
+	"os/signal"
+
+	"syscall"
 	"time"
 )
 
 func main() {
-
 	err := db.InitDB()
 	if err != nil {
 		utils.WrapErrorLog(fmt.Sprintf("Error opening db: %s", err.Error()))
 		return
 	}
 
-	utils.ReportMessage("DB opened")
+	app := fiber.New(fiber.Config{
+		AppName:       "Rocketbot ORD API",
+		StrictRouting: false,
+		WriteTimeout:  time.Second * 35,
+		ReadTimeout:   time.Second * 35,
+		IdleTimeout:   time.Second * 65,
+	})
 
+	//utils.ReportMessage("Connecting to server...")
+	//errorRetry := utils.Retry(5, time.Second*10, setupSecureChannel)
+	//if errorRetry == nil {
+	utils.ReportMessage("Starting API, successfully authenticated")
+	app.Post("/submitTransaction", submitTransaction)
+	//app.Post("/client/add", addClient)
+	//app.Post("/remove", misc.RemoveStakeDaemon)
+
+	go gServer.NewGServer()
+	go func() {
+		err := app.Listen(fmt.Sprintf(":%d", 7500))
+		if err != nil {
+			utils.WrapErrorLog(err.Error())
+			panic(err)
+		}
+	}()
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGTERM, syscall.SIGINT)
+
+	<-c
+	_, cancel := context.WithTimeout(context.Background(), time.Second*15)
+	utils.ReportMessage("/// = = Shutting down = = ///")
+	defer cancel()
+	_ = app.Shutdown()
+	os.Exit(0)
+}
+
+func submitTransaction(c *fiber.Ctx) error {
+	//txid := w.Get("txid")
+	//coinid := w.Get("coinid")
+	//cid, _ := strconv.Atoi(coinid)
+	return c.Status(http.StatusOK).JSON(&fiber.Map{
+		utils.STATUS: utils.OK,
+	})
+}
+
+func getInscriptions() {
 	s2, err := cmd.CallString("bash", "-c", "cat /home/dfwplay/.bitcoin/.cookie")
 	if err != nil {
 		utils.WrapErrorLog(err.Error())
 		return
 	}
-
 	s := strings.Split(s2, ":")
-	utils.ReportMessage(s[1])
 	daemon := &models.BitcoinDaemon{
 		ID:         0,
 		WalletUser: "__cookie__",
@@ -71,13 +122,32 @@ func main() {
 		_, err = db.InsertSQl(`INSERT INTO TRANSACTIONS_ORD (tx_id, ord_id, bc_address, link, content_link) 
 									VALUES (?,?, ?, ?, ?)`, txid[0], ins.Inscription, addr, ins.Explorer, contentLink)
 		if err != nil {
+			if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+				utils.ReportMessage("Inscription already in db")
+				continue
+			}
 			utils.WrapErrorLog(err.Error())
 			continue
 		}
-
-		//utils.ReportMessage(fmt.Sprintf("result: %s %s %s %s %s", ins.Inscription, txid[0], addr, ins.Location, ins.Explorer))
-
 	}
+
+	in, err := db.ReadArrayStruct[models.TxTable]("SELECT * FROM TRANSACTIONS_ORD")
+	if err != nil {
+		utils.WrapErrorLog(err.Error())
+		return
+	}
+	marshal, err := json.Marshal(in)
+	if err != nil {
+		utils.WrapErrorLog(err.Error())
+		return
+	}
+
+	dst := &bytes.Buffer{}
+	if err := json.Indent(dst, marshal, "", "  "); err != nil {
+		panic(err)
+	}
+
+	utils.ReportSuccess(fmt.Sprintf("Inscriptions: %s", dst.String()))
 
 	utils.ReportMessage("Inscriptions saved into db")
 
