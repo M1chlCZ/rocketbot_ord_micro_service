@@ -5,3 +5,10 @@ type Inscriptions struct {
 	Location    string `json:"location"`
 	Explorer    string `json:"explorer"`
 }
+
+type Inscribe struct {
+	Commit      string `json:"commit"`
+	Inscription string `json:"inscription"`
+	Reveal      string `json:"reveal"`
+	Fees        int    `json:"fees"`
+}

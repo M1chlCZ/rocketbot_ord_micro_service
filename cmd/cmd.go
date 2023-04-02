@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"api/utils"
 	"encoding/json"
 	"os/exec"
 	"sync"
@@ -40,10 +41,12 @@ func CallArrayJSON[T any](command string, args ...string) ([]T, error) {
 	var result []T
 	r, err := exec.Command(command, args...).Output()
 	if err != nil {
+		utils.WrapErrorLog(err.Error())
 		return getZeroArray[T](), err
 	}
 	err = json.Unmarshal(r, &result)
 	if err != nil {
+		utils.WrapErrorLog(err.Error())
 		return getZeroArray[T](), err
 	}
 	return result, nil

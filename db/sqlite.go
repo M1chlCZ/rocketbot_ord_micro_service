@@ -18,7 +18,7 @@ type Client struct {
 
 var Database *Client
 
-const dbName string = ".config/.datb"
+const dbName string = ".data/.datb"
 
 const dbVersion int = 1
 
@@ -34,8 +34,8 @@ func InitDB() error {
 	exists := false
 
 	// if folder .config doesn't exist, create it
-	if _, err := os.Stat("./.config"); os.IsNotExist(err) {
-		err := os.Mkdir("./.config", 0777)
+	if _, err := os.Stat("./.data"); os.IsNotExist(err) {
+		err := os.Mkdir("./.data", 0777)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -77,7 +77,32 @@ func initTables(db *sqlx.DB) {
 		"content_link" TEXT NOT NULL		
 	  );`
 
+	createListTxTablet := `
+CREATE TABLE IF NOT EXISTS LIST_TRANSACTIONS (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    address TEXT NOT NULL,
+    category TEXT NOT NULL,
+    amount REAL NOT NULL,
+    vout INTEGER NOT NULL,
+    fee REAL,
+    confirmations INTEGER NOT NULL,
+    blockhash TEXT,
+    blockheight INTEGER,
+    blockindex INTEGER,
+    blocktime INTEGER,
+    txid TEXT UNIQUE NOT NULL,
+    wtxid TEXT NOT NULL,
+    time INTEGER NOT NULL,
+    timereceived INTEGER NOT NULL,
+    bip125_replaceable TEXT NOT NULL,
+    abandoned INTEGER NOT NULL,
+    label TEXT,
+    trusted INTEGER
+);
+`
+
 	err := ExecQuery(db, createTxTable)
+	err = ExecQuery(db, createListTxTablet)
 	if err != nil {
 		utils.WrapErrorLog(err.Error())
 		return
@@ -86,7 +111,6 @@ func initTables(db *sqlx.DB) {
 	if err != nil {
 		return
 	}
-	utils.ReportMessage("DB version: " + strconv.Itoa(i))
 
 	switch i {
 	case 0, 1:
@@ -136,7 +160,10 @@ func ExecQuery(db *sqlx.DB, sql string) error {
 }
 
 func GetVersion(db *sqlx.DB) (error, int) {
-	insertSQL := `PRAGMA user_version`
+	insertSQL := `
+	PRAGMA
+	user_version
+	`
 	rows := db.QueryRow(insertSQL)
 	var Ver string
 	err := rows.Scan(&Ver)

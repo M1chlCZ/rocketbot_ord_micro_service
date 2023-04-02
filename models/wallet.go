@@ -85,3 +85,50 @@ type Decoded struct {
 	Vin      []Vin  `json:"vin"`
 	Vout     []Vout `json:"vout"`
 }
+
+type ListTransactions []struct {
+	Address           string        `json:"address"`
+	Category          string        `json:"category"`
+	Amount            float64       `json:"amount"`
+	Vout              int           `json:"vout"`
+	Fee               float64       `json:"fee,omitempty"`
+	Confirmations     int           `json:"confirmations"`
+	Blockhash         string        `json:"blockhash,omitempty"`
+	Blockheight       int           `json:"blockheight,omitempty"`
+	Blockindex        int           `json:"blockindex,omitempty"`
+	Blocktime         int           `json:"blocktime,omitempty"`
+	Txid              string        `json:"txid"`
+	Wtxid             string        `json:"wtxid"`
+	Walletconflicts   []interface{} `json:"walletconflicts"`
+	Time              int           `json:"time"`
+	Timereceived      int           `json:"timereceived"`
+	Bip125Replaceable string        `json:"bip125-replaceable"`
+	Abandoned         bool          `json:"abandoned,omitempty"`
+	ParentDescs       []string      `json:"parent_descs,omitempty"`
+	Label             string        `json:"label,omitempty"`
+	Trusted           bool          `json:"trusted,omitempty"`
+}
+
+type ListTransactionsDB struct {
+	ID                int           `json:"id" db:"id"`
+	Address           string        `json:"address" db:"address"`
+	Category          string        `json:"category" db:"category"`
+	Amount            float64       `json:"amount" db:"amount"`
+	Vout              int           `json:"vout" db:"vout"`
+	Fee               float64       `json:"fee,omitempty" db:"fee"`
+	Confirmations     int           `json:"confirmations" db:"confirmations"`
+	Blockhash         string        `json:"blockhash,omitempty" db:"blockhash"`
+	Blockheight       int           `json:"blockheight,omitempty" db:"blockheight"`
+	Blockindex        int           `json:"blockindex,omitempty" db:"blockindex"`
+	Blocktime         int           `json:"blocktime,omitempty" db:"blocktime"`
+	Txid              string        `json:"txid" db:"txid"`
+	Wtxid             string        `json:"wtxid" db:"wtxid"`
+	Walletconflicts   []interface{} `json:"walletconflicts" db:"walletconflicts"`
+	Time              int           `json:"time" db:"time"`
+	Timereceived      int           `json:"timereceived" db:"timereceived"`
+	Bip125Replaceable string        `json:"bip125-replaceable" db:"bip125_replaceable"`
+	Abandoned         bool          `json:"abandoned,omitempty" db:"abandoned"`
+	ParentDescs       []string      `json:"parent_descs,omitempty" db:"parent_descs"`
+	Label             string        `json:"label,omitempty" db:"label"`
+	Trusted           bool          `json:"trusted,omitempty" db:"trusted"`
+}
