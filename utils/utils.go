@@ -17,21 +17,16 @@ import (
 )
 
 const (
-	VERSION           = "0.1.0.3"
-	STATUS     string = "status"
-	OK         string = "OK"
-	FAIL       string = "FAIL"
-	ERROR      string = "hasError"
-	ServerUrl  string = "184.174.35.183"
-	SERVERPORT        = 7810
-	MNPORT            = 7805
-	STAKEPORT         = 7803
+	VERSION          = "0.1.0.3"
+	STATUS    string = "status"
+	OK        string = "OK"
+	FAIL      string = "FAIL"
+	ERROR     string = "hasError"
+	ServerUrl string = "184.174.35.183"
+	GPORT     int    = 6900
 )
 
-var colorReset = "\033[0m"
-var colorRed = "\033[31m"
-
-func InlineIFT[T any](condition bool, a T, b T) T {
+func InlineIF[T any](condition bool, a T, b T) T {
 	if condition {
 		return a
 	}

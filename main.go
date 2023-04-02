@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"api/db"
-	"api/gServer"
 	"api/utils"
 	"context"
 
@@ -40,15 +39,9 @@ func main() {
 		IdleTimeout:   time.Second * 65,
 	})
 
-	//utils.ReportMessage("Connecting to server...")
-	//errorRetry := utils.Retry(5, time.Second*10, setupSecureChannel)
-	//if errorRetry == nil {
 	utils.ReportMessage("Starting API, successfully authenticated")
 	app.Post("/submitTransaction", submitTransaction)
-	//app.Post("/client/add", addClient)
-	//app.Post("/remove", misc.RemoveStakeDaemon)
 
-	go gServer.NewGServer()
 	go func() {
 		err := app.Listen(fmt.Sprintf(":%d", 7500))
 		if err != nil {
@@ -71,6 +64,8 @@ func submitTransaction(c *fiber.Ctx) error {
 	//txid := w.Get("txid")
 	//coinid := w.Get("coinid")
 	//cid, _ := strconv.Atoi(coinid)
+
+	getInscriptions()
 	return c.Status(http.StatusOK).JSON(&fiber.Map{
 		utils.STATUS: utils.OK,
 	})

@@ -17,3 +17,4 @@
 # vendor/
 *.pb.go
 .config
+cli/upload_rual
