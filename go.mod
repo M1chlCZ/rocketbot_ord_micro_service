@@ -22,7 +22,6 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/klauspost/compress v1.16.3 // indirect
-	github.com/kolesa-team/go-webp v1.0.4 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.18 // indirect

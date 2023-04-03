@@ -224,11 +224,29 @@ func getInscriptions(c *fiber.Ctx) error {
 		utils.WrapErrorLog(err.Error())
 		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
 	}
+	final := make([]models.TxTable, 0)
+	for _, ins := range res {
+		file := "./data_final/" + ins.OrdID[:8] + ".webp"
+		bytes, err := utils.ReadFileAsBytes(file)
+		if err != nil {
+			return err
+		}
+		b64 := utils.EncodePayload(bytes)
+		val := models.TxTable{
+			ID:          ins.ID,
+			OrdID:       ins.OrdID,
+			TxID:        ins.TxID,
+			Link:        ins.Link,
+			ContentLink: ins.ContentLink,
+			Base64:      b64,
+		}
+		final = append(final, val)
+	}
 
 	js := &models.ListInscriptionsResponse{
 		HasError:     false,
 		Status:       "OK",
-		Inscriptions: res,
+		Inscriptions: final,
 	}
 	return c.Status(http.StatusOK).JSON(js)
 }

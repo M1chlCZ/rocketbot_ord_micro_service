@@ -2,6 +2,8 @@ package utils
 
 import (
 	encoder "encoding/base64"
+	"io/ioutil"
+	"os"
 )
 
 func EncodePayload(base64 []byte) string {
@@ -17,4 +19,19 @@ func DecodePayload(base64 []byte) ([]byte, error) {
 		return nil, err
 	}
 	return b64[:n], nil
+}
+
+func ReadFileAsBytes(filePath string) ([]byte, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }
