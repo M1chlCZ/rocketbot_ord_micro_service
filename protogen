@@ -1,5 +1,0 @@
-#!/bin/zsh
-set -e
-cd ./proto || exit
-protoc --go_out=../gModels --go_opt=paths=source_relative --go-grpc_out=../gModels --go-grpc_opt=paths=source_relative *.proto
-cd ..

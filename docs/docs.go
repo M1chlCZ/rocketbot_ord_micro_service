@@ -25,6 +25,47 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/getInscriptions": {
+            "get": {
+                "description": "List Inscription",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Inscriptions"
+                ],
+                "summary": "List Inscription",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ListInscriptionsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    }
+                }
+            }
+        },
         "/getTransactions": {
             "post": {
                 "description": "List transactions from BTC Core",
@@ -40,7 +81,7 @@ const docTemplate = `{
                 "summary": "List transactions from BTC Core",
                 "parameters": [
                     {
-                        "description": "Info about device",
+                        "description": "Page and PageSize",
                         "name": "data",
                         "in": "body",
                         "required": true,
@@ -145,6 +186,151 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/getaddress": {
+            "get": {
+                "description": "Mint Inscription",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Daemon"
+                ],
+                "summary": "Mint Inscription",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.NewAddressRequest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    }
+                }
+            }
+        },
+        "/mint": {
+            "post": {
+                "description": "Mint Inscription",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Inscriptions"
+                ],
+                "summary": "Mint Inscription",
+                "parameters": [
+                    {
+                        "description": "File in base64 and file type",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.MintRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Inscribe"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    }
+                }
+            }
+        },
+        "/send": {
+            "post": {
+                "description": "Send Inscription",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Inscriptions"
+                ],
+                "summary": "Send Inscription",
+                "parameters": [
+                    {
+                        "description": "File in base64 and file type",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.SendRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Inscribe"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -162,6 +348,79 @@ const docTemplate = `{
                 }
             }
         },
+        "models.Inscribe": {
+            "type": "object",
+            "properties": {
+                "commit": {
+                    "type": "string"
+                },
+                "fees": {
+                    "type": "integer"
+                },
+                "inscription": {
+                    "type": "string"
+                },
+                "reveal": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ListInscriptionsResponse": {
+            "type": "object",
+            "properties": {
+                "hasError": {
+                    "type": "boolean"
+                },
+                "inscriptions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.TxTable"
+                    }
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.MintRequest": {
+            "type": "object",
+            "properties": {
+                "base64": {
+                    "type": "string"
+                },
+                "feeRate": {
+                    "type": "integer"
+                },
+                "format": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.NewAddressRequest": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "privKey": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.SendRequest": {
+            "type": "object",
+            "properties": {
+                "Address": {
+                    "type": "string"
+                },
+                "InscriptionID": {
+                    "type": "string"
+                },
+                "feeRate": {
+                    "type": "integer"
+                }
+            }
+        },
         "models.TxRequest": {
             "type": "object",
             "properties": {
@@ -170,6 +429,29 @@ const docTemplate = `{
                 },
                 "pageSize": {
                     "type": "integer"
+                }
+            }
+        },
+        "models.TxTable": {
+            "type": "object",
+            "properties": {
+                "bcAddress": {
+                    "type": "string"
+                },
+                "contentLink": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "link": {
+                    "type": "string"
+                },
+                "ordID": {
+                    "type": "string"
+                },
+                "txID": {
+                    "type": "string"
                 }
             }
         }

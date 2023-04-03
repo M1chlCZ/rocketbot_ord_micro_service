@@ -15,3 +15,26 @@ type TxRequest struct {
 	Page     int `json:"page"`
 	PageSize int `json:"pageSize"`
 }
+
+type MintRequest struct {
+	FeeRate int    `json:"feeRate"`
+	Format  string `json:"format"`
+	Base64  string `json:"base64"`
+}
+
+type SendRequest struct {
+	FeeRate       int    `json:"feeRate"`
+	Address       string `json:"Address"`
+	InscriptionID string `json:"InscriptionID"`
+}
+
+type NewAddressRequest struct {
+	Address string `json:"address"`
+	PrivKey string `json:"privKey"`
+}
+
+type ListInscriptionsResponse struct {
+	HasError     bool      `json:"hasError"`
+	Status       string    `json:"status"`
+	Inscriptions []TxTable `json:"inscriptions"`
+}

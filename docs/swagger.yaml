@@ -9,12 +9,74 @@ definitions:
       status:
         type: string
     type: object
+  models.Inscribe:
+    properties:
+      commit:
+        type: string
+      fees:
+        type: integer
+      inscription:
+        type: string
+      reveal:
+        type: string
+    type: object
+  models.ListInscriptionsResponse:
+    properties:
+      hasError:
+        type: boolean
+      inscriptions:
+        items:
+          $ref: '#/definitions/models.TxTable'
+        type: array
+      status:
+        type: string
+    type: object
+  models.MintRequest:
+    properties:
+      base64:
+        type: string
+      feeRate:
+        type: integer
+      format:
+        type: string
+    type: object
+  models.NewAddressRequest:
+    properties:
+      address:
+        type: string
+      privKey:
+        type: string
+    type: object
+  models.SendRequest:
+    properties:
+      Address:
+        type: string
+      InscriptionID:
+        type: string
+      feeRate:
+        type: integer
+    type: object
   models.TxRequest:
     properties:
       page:
         type: integer
       pageSize:
         type: integer
+    type: object
+  models.TxTable:
+    properties:
+      bcAddress:
+        type: string
+      contentLink:
+        type: string
+      id:
+        type: integer
+      link:
+        type: string
+      ordID:
+        type: string
+      txID:
+        type: string
     type: object
 host: 89.116.25.234:7500
 info:
@@ -30,13 +92,40 @@ info:
   title: Rocketbot ORD API
   version: "1.0"
 paths:
+  /getInscriptions:
+    get:
+      consumes:
+      - application/json
+      description: List Inscription
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ListInscriptionsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+      summary: List Inscription
+      tags:
+      - Inscriptions
   /getTransactions:
     post:
       consumes:
       - application/json
       description: List transactions from BTC Core
       parameters:
-      - description: Info about device
+      - description: Page and PageSize
         in: body
         name: data
         required: true
@@ -110,4 +199,99 @@ paths:
       summary: List transactions from BTC Core
       tags:
       - Transactions
+  /getaddress:
+    get:
+      consumes:
+      - application/json
+      description: Mint Inscription
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.NewAddressRequest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+      summary: Mint Inscription
+      tags:
+      - Daemon
+  /mint:
+    post:
+      consumes:
+      - application/json
+      description: Mint Inscription
+      parameters:
+      - description: File in base64 and file type
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/models.MintRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Inscribe'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+      summary: Mint Inscription
+      tags:
+      - Inscriptions
+  /send:
+    post:
+      consumes:
+      - application/json
+      description: Send Inscription
+      parameters:
+      - description: File in base64 and file type
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/models.SendRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Inscribe'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+      summary: Send Inscription
+      tags:
+      - Inscriptions
 swagger: "2.0"

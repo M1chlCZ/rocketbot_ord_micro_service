@@ -1,35 +1,18 @@
 package services
 
 import (
-	"api/cmd"
 	"api/coind"
 	"api/db"
 	"api/models"
 	"api/utils"
-	"database/sql"
 	"encoding/json"
 	"strings"
 )
 
 func SaveListTransaction() {
-	s2, err := cmd.CallString("bash", "-c", "cat /home/dfwplay/.bitcoin/.cookie")
-	if err != nil {
-		utils.WrapErrorLog(err.Error())
-		return
-	}
 
-	s := strings.Split(s2, ":")
-	dm := &models.BitcoinDaemon{
-		ID:         0,
-		WalletUser: "__cookie__",
-		WalletPass: s[1],
-		WalletPort: 12300,
-		Wallet:     "/wallet/ord",
-		CoinID:     0,
-		IP:         "127.0.0.1",
-		PassPhrase: sql.NullString{},
-	}
-	sv, err := coind.WrapDaemon(dm, 1, "listtransactions", "*", 999999)
+	dm := GetDaemon()
+	sv, err := coind.WrapDaemon(dm, 1, "listtransactions", "*", 9999999)
 	if err != nil {
 		utils.WrapErrorLog(err.Error())
 		return
