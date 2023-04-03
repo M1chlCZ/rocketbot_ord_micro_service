@@ -18,6 +18,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 
 	"syscall"
@@ -63,11 +64,11 @@ func main() {
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
 	//external api
-	app.Get("/api/getInscriptions", getInscriptions)
-	app.Post("/api/getTransactions", getTransaction)
+	app.Get("/api/inscriptions", getInscriptions)
+	app.Get("/api/transactions", getTransaction)
 	app.Post("/api/mint", mint)
 	app.Post("/api/send", sendInscription)
-	app.Get("/api/getaddress", getAddress)
+	app.Get("/api/address", getAddress)
 
 	go func() {
 		err := app.Listen(fmt.Sprintf(":%d", 7500))
@@ -98,21 +99,24 @@ func main() {
 // @Failure      400  {object}  models.ErrorHTTP
 // @Failure      409  {object}  models.ErrorHTTP
 // @Failure      500  {object}  models.ErrorHTTP
-// @Router       /getaddress [get]
+// @Router       /address [get]
 func getAddress(c *fiber.Ctx) error {
 	dm := services.GetDaemon()
-	addr, err := coind.WrapDaemon(dm, 1, "getnewaddress")
+	type Address struct {
+		Address string `json:"address"`
+	}
+	addr, err := cmd.CallJSON[Address]("bash", "-c", "/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord wallet receive")
 	if err != nil {
 		utils.WrapErrorLog(err.Error())
 		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
 	}
-	privKey, err := coind.WrapDaemon(dm, 1, "dumbprivkey", addr)
+	privKey, err := coind.WrapDaemon(dm, 1, "dumbprivkey", addr.Address)
 	if err != nil {
 		utils.WrapErrorLog(err.Error())
 		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
 	}
 	return c.Status(http.StatusOK).JSON(&models.NewAddressRequest{
-		Address: string(addr),
+		Address: addr.Address,
 		PrivKey: string(privKey),
 	})
 }
@@ -213,7 +217,7 @@ func mint(c *fiber.Ctx) error {
 // @Failure      400  {object}  models.ErrorHTTP
 // @Failure      409  {object}  models.ErrorHTTP
 // @Failure      500  {object}  models.ErrorHTTP
-// @Router       /getInscriptions [get]
+// @Router       /inscriptions [get]
 func getInscriptions(c *fiber.Ctx) error {
 	res, err := db.ReadArrayStruct[models.TxTable]("SELECT * FROM TRANSACTIONS_ORD")
 	if err != nil {
@@ -235,18 +239,26 @@ func getInscriptions(c *fiber.Ctx) error {
 // @Tags         Transactions
 // @Accept       json
 // @Produce      json
-// @Param 		 data body models.TxRequest true "Page and PageSize"
+// @Param page query int true "Page number"
+// @Param pageSize query int true "Number of items per page"
 // @Success      200  {object}  models.ListTransactions
 // @Failure      400  {object}  models.ErrorHTTP
 // @Failure      409  {object}  models.ErrorHTTP
 // @Failure      500  {object}  models.ErrorHTTP
-// @Router       /getTransactions [post]
+// @Router       /transactions [get]
 func getTransaction(c *fiber.Ctx) error {
+	pg := c.Query("page", "0")
+	pgSize := c.Query("pageSize", "0")
 
-	var req models.TxRequest
-	err := c.BodyParser(&req)
-	if err != nil {
+	pgInt, err := strconv.Atoi(pg)
+	pgSizeInt, err2 := strconv.Atoi(pgSize)
+
+	if err != nil || err2 != nil {
 		return utils.ReportError(c, err.Error(), http.StatusBadRequest)
+	}
+	req := &models.TxRequest{
+		Page:     pgInt,
+		PageSize: pgSizeInt,
 	}
 
 	//checks
@@ -258,9 +270,13 @@ func getTransaction(c *fiber.Ctx) error {
 	}
 
 	pageSize := req.PageSize
-	offset := (req.Page - 1) * pageSize
+	page := (req.Page - 1) * req.PageSize
+	utils.ReportMessage(fmt.Sprintf("Offset: %d, Page: %d", page, req.PageSize))
 
-	list, err := db.ReadArrayStruct[models.ListTransactionsDB](`SELECT * FROM LIST_TRANSACTIONS LIMIT ?, ?`, pageSize, offset)
+	list, err := db.ReadArrayStruct[models.ListTransactionsDB](`SELECT * FROM LIST_TRANSACTIONS
+WHERE oid NOT IN ( SELECT oid FROM LIST_TRANSACTIONS
+                   ORDER BY id LIMIT ? )
+ORDER BY id LIMIT ?`, page, pageSize)
 	if err != nil {
 		utils.WrapErrorLog(err.Error())
 		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)

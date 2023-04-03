@@ -6,7 +6,6 @@ import (
 	"api/db"
 	"api/models"
 	"api/utils"
-	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -56,10 +55,16 @@ func GetInscriptions() {
 			utils.WrapErrorLog(errJson.Error())
 			return
 		}
+
+		_, err = utils.DownloadImage(ins.Inscription)
+		if err != nil {
+			utils.WrapErrorLog(err.Error())
+		}
 		contentLink := fmt.Sprintf("https://ordinals.com/content/%s", ins.Inscription)
 		addr := info.Decoded.Vout[vout].ScriptPubKey.Address
 		_, err = db.InsertSQl(`INSERT INTO TRANSACTIONS_ORD (tx_id, ord_id, bc_address, link, content_link) 
 									VALUES (?,?, ?, ?, ?)`, txid[0], ins.Inscription, addr, ins.Explorer, contentLink)
+
 		if err != nil {
 			if strings.Contains(err.Error(), "UNIQUE constraint failed") {
 				continue
@@ -67,22 +72,8 @@ func GetInscriptions() {
 			utils.WrapErrorLog(err.Error())
 			continue
 		}
-	}
 
-	in, err := db.ReadArrayStruct[models.TxTable]("SELECT * FROM TRANSACTIONS_ORD")
-	if err != nil {
-		utils.WrapErrorLog(err.Error())
-		return
 	}
-	marshal, err := json.Marshal(in)
-	if err != nil {
-		utils.WrapErrorLog(err.Error())
-		return
-	}
-
-	dst := &bytes.Buffer{}
-	if err := json.Indent(dst, marshal, "", "  "); err != nil {
-		panic(err)
-	}
+	ScanAndConvert()
 	utils.ReportMessage("Inscriptions saved into db")
 }

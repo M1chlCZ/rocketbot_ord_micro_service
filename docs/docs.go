@@ -25,169 +25,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/getInscriptions": {
-            "get": {
-                "description": "List Inscription",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Inscriptions"
-                ],
-                "summary": "List Inscription",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.ListInscriptionsResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorHTTP"
-                        }
-                    },
-                    "409": {
-                        "description": "Conflict",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorHTTP"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorHTTP"
-                        }
-                    }
-                }
-            }
-        },
-        "/getTransactions": {
-            "post": {
-                "description": "List transactions from BTC Core",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Transactions"
-                ],
-                "summary": "List transactions from BTC Core",
-                "parameters": [
-                    {
-                        "description": "Page and PageSize",
-                        "name": "data",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.TxRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "abandoned": {
-                                        "type": "boolean"
-                                    },
-                                    "address": {
-                                        "type": "string"
-                                    },
-                                    "amount": {
-                                        "type": "number"
-                                    },
-                                    "bip125-replaceable": {
-                                        "type": "string"
-                                    },
-                                    "blockhash": {
-                                        "type": "string"
-                                    },
-                                    "blockheight": {
-                                        "type": "integer"
-                                    },
-                                    "blockindex": {
-                                        "type": "integer"
-                                    },
-                                    "blocktime": {
-                                        "type": "integer"
-                                    },
-                                    "category": {
-                                        "type": "string"
-                                    },
-                                    "confirmations": {
-                                        "type": "integer"
-                                    },
-                                    "fee": {
-                                        "type": "number"
-                                    },
-                                    "label": {
-                                        "type": "string"
-                                    },
-                                    "parent_descs": {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "string"
-                                        }
-                                    },
-                                    "time": {
-                                        "type": "integer"
-                                    },
-                                    "timereceived": {
-                                        "type": "integer"
-                                    },
-                                    "trusted": {
-                                        "type": "boolean"
-                                    },
-                                    "txid": {
-                                        "type": "string"
-                                    },
-                                    "vout": {
-                                        "type": "integer"
-                                    },
-                                    "walletconflicts": {
-                                        "type": "array",
-                                        "items": {}
-                                    },
-                                    "wtxid": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorHTTP"
-                        }
-                    },
-                    "409": {
-                        "description": "Conflict",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorHTTP"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorHTTP"
-                        }
-                    }
-                }
-            }
-        },
-        "/getaddress": {
+        "/address": {
             "get": {
                 "description": "Mint Inscription",
                 "consumes": [
@@ -205,6 +43,47 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/models.NewAddressRequest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    }
+                }
+            }
+        },
+        "/inscriptions": {
+            "get": {
+                "description": "List Inscription",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Inscriptions"
+                ],
+                "summary": "List Inscription",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ListInscriptionsResponse"
                         }
                     },
                     "400": {
@@ -331,6 +210,132 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/transactions": {
+            "get": {
+                "description": "List transactions from BTC Core",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Transactions"
+                ],
+                "summary": "List transactions from BTC Core",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of items per page",
+                        "name": "pageSize",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "abandoned": {
+                                        "type": "boolean"
+                                    },
+                                    "address": {
+                                        "type": "string"
+                                    },
+                                    "amount": {
+                                        "type": "number"
+                                    },
+                                    "bip125-replaceable": {
+                                        "type": "string"
+                                    },
+                                    "blockhash": {
+                                        "type": "string"
+                                    },
+                                    "blockheight": {
+                                        "type": "integer"
+                                    },
+                                    "blockindex": {
+                                        "type": "integer"
+                                    },
+                                    "blocktime": {
+                                        "type": "integer"
+                                    },
+                                    "category": {
+                                        "type": "string"
+                                    },
+                                    "confirmations": {
+                                        "type": "integer"
+                                    },
+                                    "fee": {
+                                        "type": "number"
+                                    },
+                                    "label": {
+                                        "type": "string"
+                                    },
+                                    "parent_descs": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "time": {
+                                        "type": "integer"
+                                    },
+                                    "timereceived": {
+                                        "type": "integer"
+                                    },
+                                    "trusted": {
+                                        "type": "boolean"
+                                    },
+                                    "txid": {
+                                        "type": "string"
+                                    },
+                                    "vout": {
+                                        "type": "integer"
+                                    },
+                                    "walletconflicts": {
+                                        "type": "array",
+                                        "items": {}
+                                    },
+                                    "wtxid": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -417,17 +422,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "feeRate": {
-                    "type": "integer"
-                }
-            }
-        },
-        "models.TxRequest": {
-            "type": "object",
-            "properties": {
-                "page": {
-                    "type": "integer"
-                },
-                "pageSize": {
                     "type": "integer"
                 }
             }
