@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 	"io"
 	"log"
@@ -109,6 +110,29 @@ func ReportWarning(message string) {
 	if !strings.Contains(message, "tx_id_UNIQUE") {
 		go logToFile(fmt.Sprintf("[WARNING] %s", message))
 	}
+}
+
+func ReportError(c *fiber.Ctx, err string, statusCode int) error {
+	json := fiber.Map{
+		"errorMessage": err,
+		STATUS:         FAIL,
+		ERROR:          true,
+	}
+	if statusCode == 500 {
+		if !strings.Contains(err, "tx_id_UNIQUE") || strings.Contains(err, "Invalid Token, idUser") {
+			go logToFile(fmt.Sprintf("[WARNING] %s %s %s %s", "HTTP call failed : ", err, "  Status code: ", fmt.Sprintf("%d", statusCode)))
+		}
+	} else {
+		go logToFile(fmt.Sprintf("[WARNING] %s %s %s %s", "HTTP call failed : ", err, "  Status code: ", fmt.Sprintf("%d", statusCode)))
+	}
+	return c.Status(statusCode).JSON(json)
+}
+
+func ReportOK(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{
+		STATUS: OK,
+		ERROR:  false,
+	})
 }
 
 func ReportSuccess(message string) {

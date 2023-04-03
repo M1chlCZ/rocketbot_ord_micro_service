@@ -110,7 +110,7 @@ type ListTransactions []struct {
 }
 
 type ListTransactionsDB struct {
-	ID                int           `json:"id" db:"id"`
+	ID                int           `json:"-" db:"id"`
 	Address           string        `json:"address" db:"address"`
 	Category          string        `json:"category" db:"category"`
 	Amount            float64       `json:"amount" db:"amount"`

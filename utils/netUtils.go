@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"io"
 	"net/http"
@@ -41,15 +42,15 @@ func GETRequest[T any](url string) (T, error) {
 	return data, nil
 }
 
-func POSTRequest[T any](url string, data *fiber.Map) (T, error) {
+func POSTRequest[T any](endpoint string, data *fiber.Map) (T, error) {
 	var responseData T
-
+	urlPost := fmt.Sprintf("%s%s%s", ServerUrl, "/api/v1/", endpoint)
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return responseData, err
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", urlPost, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return responseData, err
 	}

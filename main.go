@@ -1,22 +1,18 @@
 package main
 
 import (
-	"api/cmd"
-	"api/coind"
 	"api/daemon"
 	"api/db"
+	_ "api/docs"
 	"api/models"
 	"api/services"
 	"api/utils"
-	"bytes"
 	"context"
-	"database/sql"
-	"encoding/json"
-	"net/http"
-	"strings"
-
 	"fmt"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/swagger"
+	"net/http"
 	"os"
 	"os/signal"
 
@@ -24,6 +20,21 @@ import (
 	"time"
 )
 
+// @title Rocketbot ORD API
+// @version 1.0
+// @description Private API for ORD
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name RocketBot
+// @contact.url http://app.rocketbot.pro
+// @contact.email m1chlcz18@gmail.com
+// @contact.name Michal Žídek
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host     89.116.25.234:7500
+// @BasePath /api
 func main() {
 	err := db.InitDB()
 	if err != nil {
@@ -40,11 +51,16 @@ func main() {
 		ReadTimeout:   time.Second * 240,
 		IdleTimeout:   time.Second * 240,
 	})
+	app.Use(cors.New())
 	//internal api
 	app.Post("/submitTransaction", submitTransaction)
 
+	//swagger
+	app.Get("/swagger/*", swagger.HandlerDefault)
+
 	//external api
-	app.Get("/getInscriptions", getInscriptions)
+	app.Get("/api/getInscriptions", getInscriptions)
+	app.Post("/api/getTransactions", getTransaction)
 
 	go func() {
 		err := app.Listen(fmt.Sprintf(":%d", 7500))
@@ -73,20 +89,23 @@ func submitTransaction(c *fiber.Ctx) error {
 		"txid":   txid,
 		"coinid": 0,
 	}
+
 	go services.GetInscriptions()
-	//TODO get transactions from bitcoin daemon
-	r, err := utils.POSTRequest[models.HttpErr]("http://localhost:7466/submitTransaction", mp)
-	if err != nil {
-		utils.WrapErrorLog(err.Error())
-		return c.Status(http.StatusOK).JSON(&fiber.Map{
-			utils.STATUS: utils.OK,
-		})
-	}
-	if r.HasError != false {
-		utils.WrapErrorLog(r.Message)
-		return c.Status(http.StatusOK).JSON(&fiber.Map{
-			utils.STATUS: utils.OK,
-		})
+	go services.SaveListTransaction()
+
+	for {
+		r, err := utils.POSTRequest[models.ErrorHTTP]("submitTransaction", mp)
+		if err != nil {
+			utils.WrapErrorLog(err.Error())
+			time.Sleep(time.Second * 5)
+			continue
+		}
+		if r.HasError != false {
+			utils.WrapErrorLog(r.ErrorMessage)
+			time.Sleep(time.Second * 5)
+			continue
+		}
+		break
 	}
 
 	return c.Status(http.StatusOK).JSON(&fiber.Map{
@@ -109,66 +128,42 @@ func getInscriptions(c *fiber.Ctx) error {
 	})
 }
 
-func saveListTransaction() {
-	s2, err := cmd.CallString("bash", "-c", "cat /home/dfwplay/.bitcoin/.cookie")
+// ListTransaction godoc
+// @Summary      List transactions from BTC Core
+// @Description  List transactions from BTC Core
+// @Tags         Transactions
+// @Accept       json
+// @Produce      json
+// @Param 		 data body models.TxRequest true "Info about device"
+// @Success      200  {object}  models.ListTransactions
+// @Failure      400  {object}  models.ErrorHTTP
+// @Failure      409  {object}  models.ErrorHTTP
+// @Failure      500  {object}  models.ErrorHTTP
+// @Router       /getTransactions [post]
+func getTransaction(c *fiber.Ctx) error {
+
+	var req models.TxRequest
+	err := c.BodyParser(&req)
 	if err != nil {
-		utils.WrapErrorLog(err.Error())
-		return
+		return utils.ReportError(c, err.Error(), http.StatusBadRequest)
 	}
 
-	s := strings.Split(s2, ":")
-	dm := &models.BitcoinDaemon{
-		ID:         0,
-		WalletUser: "__cookie__",
-		WalletPass: s[1],
-		WalletPort: 12300,
-		Wallet:     "/wallet/ord",
-		CoinID:     0,
-		IP:         "127.0.0.1",
-		PassPhrase: sql.NullString{},
-	}
-	sv, err := coind.WrapDaemon(dm, 1, "listtransactions", "*", 999999)
-	if err != nil {
-		utils.WrapErrorLog(err.Error())
-		return
-	}
-	var model models.ListTransactions
-	err = json.Unmarshal(sv, &model)
-	if err != nil {
-		utils.WrapErrorLog(err.Error())
-		return
-	}
-	for _, v := range model {
-		_, err := db.InsertSQl(`INSERT INTO LIST_TRANSACTIONS (address, category, amount, vout, fee, confirmations, blockhash, blockheight, blockindex, blocktime, txid, wtxid, time, timereceived, 
-                               bip125_replaceable, abandoned, label, trusted) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-			v.Address, v.Category, v.Amount, v.Vout, v.Fee, v.Confirmations, v.Blockhash, v.Blockheight, v.Blockindex, v.Blocktime, v.Txid, v.Wtxid, v.Time, v.Timereceived, v.Bip125Replaceable, v.Abandoned, v.Label, v.Trusted)
-		if err != nil {
-			if !strings.Contains(err.Error(), "UNIQUE constraint failed") {
-				utils.WrapErrorLog(err.Error())
-			}
-			continue
-		}
-	}
-}
+	pageSize := req.PageSize
+	offset := (req.Page - 1) * pageSize
 
-func getTransaction() {
-	list, err := db.ReadArrayStruct[models.ListTransactionsDB]("SELECT * FROM LIST_TRANSACTIONS")
+	list, err := db.ReadArrayStruct[models.ListTransactionsDB](`SELECT * FROM LIST_TRANSACTIONS LIMIT ?, ?`, pageSize, offset)
 	if err != nil {
 		utils.WrapErrorLog(err.Error())
-		return
+		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
 	}
 	tx := make([]models.ListTransactionsDB, 0)
 	for _, v := range list {
 		tx = append(tx, v)
 	}
-	marshal, err := json.Marshal(tx)
-	if err != nil {
-		utils.WrapErrorLog(err.Error())
-		return
-	}
-	dst := &bytes.Buffer{}
-	if err := json.Indent(dst, marshal, "", "  "); err != nil {
-		panic(err)
-	}
-	utils.ReportMessage(dst.String())
+	//marshal, err := json.Marshal(tx)
+	//if err != nil {
+	//	utils.WrapErrorLog(err.Error())
+	//	return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
+	//}
+	return c.JSON(tx)
 }

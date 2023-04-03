@@ -20,9 +20,8 @@ func StartCron() {
 
 func index() {
 	utils.ReportMessage("Indexing")
-	a, err := cmd.CallString("bash", "-c", "/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord wallet inscriptions")
+	_, err := cmd.CallString("bash", "-c", "/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord wallet inscriptions")
 	if err != nil {
 		utils.WrapErrorLog(err.Error())
 	}
-	utils.ReportMessage(string(a))
 }

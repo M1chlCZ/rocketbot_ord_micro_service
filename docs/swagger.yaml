@@ -1,0 +1,113 @@
+basePath: /api
+definitions:
+  models.ErrorHTTP:
+    properties:
+      errorMessage:
+        type: string
+      hasError:
+        type: boolean
+      status:
+        type: string
+    type: object
+  models.TxRequest:
+    properties:
+      page:
+        type: integer
+      pageSize:
+        type: integer
+    type: object
+host: 89.116.25.234:7500
+info:
+  contact:
+    email: m1chlcz18@gmail.com
+    name: Michal Žídek
+    url: http://app.rocketbot.pro
+  description: Private API for ORD
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Rocketbot ORD API
+  version: "1.0"
+paths:
+  /getTransactions:
+    post:
+      consumes:
+      - application/json
+      description: List transactions from BTC Core
+      parameters:
+      - description: Info about device
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/models.TxRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              properties:
+                abandoned:
+                  type: boolean
+                address:
+                  type: string
+                amount:
+                  type: number
+                bip125-replaceable:
+                  type: string
+                blockhash:
+                  type: string
+                blockheight:
+                  type: integer
+                blockindex:
+                  type: integer
+                blocktime:
+                  type: integer
+                category:
+                  type: string
+                confirmations:
+                  type: integer
+                fee:
+                  type: number
+                label:
+                  type: string
+                parent_descs:
+                  items:
+                    type: string
+                  type: array
+                time:
+                  type: integer
+                timereceived:
+                  type: integer
+                trusted:
+                  type: boolean
+                txid:
+                  type: string
+                vout:
+                  type: integer
+                walletconflicts:
+                  items: {}
+                  type: array
+                wtxid:
+                  type: string
+              type: object
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+      summary: List transactions from BTC Core
+      tags:
+      - Transactions
+swagger: "2.0"
