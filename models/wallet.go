@@ -132,3 +132,8 @@ type ListTransactionsDB struct {
 	Label             string        `json:"label,omitempty" db:"label"`
 	Trusted           bool          `json:"trusted,omitempty" db:"trusted"`
 }
+
+type FeeRate struct {
+	Feerate float64 `json:"feerate"`
+	Blocks  int     `json:"blocks"`
+}

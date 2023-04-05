@@ -68,7 +68,7 @@ const docTemplate = `{
         },
         "/inscriptions": {
             "get": {
-                "description": "List Inscription",
+                "description": "List of Inscriptions in the wallet",
                 "consumes": [
                     "application/json"
                 ],
@@ -78,7 +78,21 @@ const docTemplate = `{
                 "tags": [
                     "Inscriptions"
                 ],
-                "summary": "List Inscription",
+                "summary": "List of Inscriptions in the wallet",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of items per page",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -109,7 +123,7 @@ const docTemplate = `{
         },
         "/mint": {
             "post": {
-                "description": "Mint Inscription",
+                "description": "Mint an Inscription",
                 "consumes": [
                     "application/json"
                 ],
@@ -119,7 +133,7 @@ const docTemplate = `{
                 "tags": [
                     "Inscriptions"
                 ],
-                "summary": "Mint Inscription",
+                "summary": "Mint an Inscription",
                 "parameters": [
                     {
                         "description": "File in base64 and file type",
@@ -161,7 +175,7 @@ const docTemplate = `{
         },
         "/send": {
             "post": {
-                "description": "Send Inscription",
+                "description": "Send an Inscription",
                 "consumes": [
                     "application/json"
                 ],
@@ -171,7 +185,7 @@ const docTemplate = `{
                 "tags": [
                     "Inscriptions"
                 ],
-                "summary": "Send Inscription",
+                "summary": "Send an Inscription",
                 "parameters": [
                     {
                         "description": "File in base64 and file type",
@@ -213,7 +227,7 @@ const docTemplate = `{
         },
         "/transactions": {
             "get": {
-                "description": "List transactions from BTC Core",
+                "description": "List of transactions in the BTC Core",
                 "consumes": [
                     "application/json"
                 ],
@@ -223,21 +237,19 @@ const docTemplate = `{
                 "tags": [
                     "Transactions"
                 ],
-                "summary": "List transactions from BTC Core",
+                "summary": "List of transactions in the BTC Core",
                 "parameters": [
                     {
                         "type": "integer",
                         "description": "Page number",
                         "name": "page",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "integer",
                         "description": "Number of items per page",
                         "name": "pageSize",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -393,9 +405,6 @@ const docTemplate = `{
                 "base64": {
                     "type": "string"
                 },
-                "feeRate": {
-                    "type": "integer"
-                },
                 "format": {
                     "type": "string"
                 }
@@ -405,9 +414,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "address": {
-                    "type": "string"
-                },
-                "privKey": {
                     "type": "string"
                 }
             }
@@ -420,19 +426,19 @@ const docTemplate = `{
                 },
                 "InscriptionID": {
                     "type": "string"
-                },
-                "feeRate": {
-                    "type": "integer"
                 }
             }
         },
         "models.TxTable": {
             "type": "object",
             "properties": {
-                "bcAddress": {
+                "base64": {
                     "type": "string"
                 },
-                "contentLink": {
+                "bc_address": {
+                    "type": "string"
+                },
+                "content_link": {
                     "type": "string"
                 },
                 "id": {
@@ -441,10 +447,10 @@ const docTemplate = `{
                 "link": {
                     "type": "string"
                 },
-                "ordID": {
+                "ord_id": {
                     "type": "string"
                 },
-                "txID": {
+                "tx_id": {
                     "type": "string"
                 }
             }

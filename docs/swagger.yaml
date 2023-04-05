@@ -35,16 +35,12 @@ definitions:
     properties:
       base64:
         type: string
-      feeRate:
-        type: integer
       format:
         type: string
     type: object
   models.NewAddressRequest:
     properties:
       address:
-        type: string
-      privKey:
         type: string
     type: object
   models.SendRequest:
@@ -53,22 +49,22 @@ definitions:
         type: string
       InscriptionID:
         type: string
-      feeRate:
-        type: integer
     type: object
   models.TxTable:
     properties:
-      bcAddress:
+      base64:
         type: string
-      contentLink:
+      bc_address:
+        type: string
+      content_link:
         type: string
       id:
         type: integer
       link:
         type: string
-      ordID:
+      ord_id:
         type: string
-      txID:
+      tx_id:
         type: string
     type: object
 host: 89.116.25.234:7500
@@ -116,7 +112,16 @@ paths:
     get:
       consumes:
       - application/json
-      description: List Inscription
+      description: List of Inscriptions in the wallet
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: pageSize
+        type: integer
       produces:
       - application/json
       responses:
@@ -136,14 +141,14 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.ErrorHTTP'
-      summary: List Inscription
+      summary: List of Inscriptions in the wallet
       tags:
       - Inscriptions
   /mint:
     post:
       consumes:
       - application/json
-      description: Mint Inscription
+      description: Mint an Inscription
       parameters:
       - description: File in base64 and file type
         in: body
@@ -170,14 +175,14 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.ErrorHTTP'
-      summary: Mint Inscription
+      summary: Mint an Inscription
       tags:
       - Inscriptions
   /send:
     post:
       consumes:
       - application/json
-      description: Send Inscription
+      description: Send an Inscription
       parameters:
       - description: File in base64 and file type
         in: body
@@ -204,24 +209,22 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.ErrorHTTP'
-      summary: Send Inscription
+      summary: Send an Inscription
       tags:
       - Inscriptions
   /transactions:
     get:
       consumes:
       - application/json
-      description: List transactions from BTC Core
+      description: List of transactions in the BTC Core
       parameters:
       - description: Page number
         in: query
         name: page
-        required: true
         type: integer
       - description: Number of items per page
         in: query
         name: pageSize
-        required: true
         type: integer
       produces:
       - application/json
@@ -288,7 +291,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.ErrorHTTP'
-      summary: List transactions from BTC Core
+      summary: List of transactions in the BTC Core
       tags:
       - Transactions
 swagger: "2.0"

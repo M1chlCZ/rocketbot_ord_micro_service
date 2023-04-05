@@ -61,7 +61,7 @@
         },
         "/inscriptions": {
             "get": {
-                "description": "List Inscription",
+                "description": "List of Inscriptions in the wallet",
                 "consumes": [
                     "application/json"
                 ],
@@ -71,7 +71,21 @@
                 "tags": [
                     "Inscriptions"
                 ],
-                "summary": "List Inscription",
+                "summary": "List of Inscriptions in the wallet",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of items per page",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -102,7 +116,7 @@
         },
         "/mint": {
             "post": {
-                "description": "Mint Inscription",
+                "description": "Mint an Inscription",
                 "consumes": [
                     "application/json"
                 ],
@@ -112,7 +126,7 @@
                 "tags": [
                     "Inscriptions"
                 ],
-                "summary": "Mint Inscription",
+                "summary": "Mint an Inscription",
                 "parameters": [
                     {
                         "description": "File in base64 and file type",
@@ -154,7 +168,7 @@
         },
         "/send": {
             "post": {
-                "description": "Send Inscription",
+                "description": "Send an Inscription",
                 "consumes": [
                     "application/json"
                 ],
@@ -164,7 +178,7 @@
                 "tags": [
                     "Inscriptions"
                 ],
-                "summary": "Send Inscription",
+                "summary": "Send an Inscription",
                 "parameters": [
                     {
                         "description": "File in base64 and file type",
@@ -206,7 +220,7 @@
         },
         "/transactions": {
             "get": {
-                "description": "List transactions from BTC Core",
+                "description": "List of transactions in the BTC Core",
                 "consumes": [
                     "application/json"
                 ],
@@ -216,21 +230,19 @@
                 "tags": [
                     "Transactions"
                 ],
-                "summary": "List transactions from BTC Core",
+                "summary": "List of transactions in the BTC Core",
                 "parameters": [
                     {
                         "type": "integer",
                         "description": "Page number",
                         "name": "page",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "integer",
                         "description": "Number of items per page",
                         "name": "pageSize",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -386,9 +398,6 @@
                 "base64": {
                     "type": "string"
                 },
-                "feeRate": {
-                    "type": "integer"
-                },
                 "format": {
                     "type": "string"
                 }
@@ -398,9 +407,6 @@
             "type": "object",
             "properties": {
                 "address": {
-                    "type": "string"
-                },
-                "privKey": {
                     "type": "string"
                 }
             }
@@ -413,19 +419,19 @@
                 },
                 "InscriptionID": {
                     "type": "string"
-                },
-                "feeRate": {
-                    "type": "integer"
                 }
             }
         },
         "models.TxTable": {
             "type": "object",
             "properties": {
-                "bcAddress": {
+                "base64": {
                     "type": "string"
                 },
-                "contentLink": {
+                "bc_address": {
+                    "type": "string"
+                },
+                "content_link": {
                     "type": "string"
                 },
                 "id": {
@@ -434,10 +440,10 @@
                 "link": {
                     "type": "string"
                 },
-                "ordID": {
+                "ord_id": {
                     "type": "string"
                 },
-                "txID": {
+                "tx_id": {
                     "type": "string"
                 }
             }

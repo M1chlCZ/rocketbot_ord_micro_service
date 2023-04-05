@@ -10,7 +10,7 @@ import (
 )
 
 func SubmitTransaction(c *fiber.Ctx) error {
-	//curl -X POST -H "txid:$1" -H "coinid:$coinID" -H "node_id:$nodeID" http://localhost:7466/submitTransaction
+	//curl -X POST -H "txid:$1" -H "coinid:$coinID" -H "node_id:$nodeID" http://localhost:7500/submitTransaction
 	txid := c.Get("txid")
 
 	mp := &fiber.Map{

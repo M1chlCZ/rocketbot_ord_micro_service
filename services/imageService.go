@@ -21,10 +21,10 @@ mainloop:
 		if !strings.Contains(file, ".webp") {
 			fileOld := strings.Split(file, ".")
 			fileNew := strings.ReplaceAll(file, fmt.Sprintf(".%s", fileOld[1]), ".webp")
-			utils.ReportMessage(fmt.Sprintf("Converting %s to %s", file, fileNew))
 			if fileExists(fmt.Sprintf("./data_final/%s", fileNew)) {
 				continue mainloop
 			}
+			utils.ReportMessage(fmt.Sprintf("Converting %s to %s", file, fileNew))
 			o, err := exec.Command("bash", "-c", fmt.Sprintf("cwebp -q 95 -resize 500 500 ./data/%s -o ./data_final/%s", file, fileNew)).Output()
 			if err != nil {
 				utils.WrapErrorLog(err.Error())
@@ -34,10 +34,10 @@ mainloop:
 		} else {
 			fileOld := strings.Split(file, ".")
 			fileNew := strings.ReplaceAll(file, fmt.Sprintf(".%s", fileOld[1]), ".webp")
-			utils.ReportMessage(fmt.Sprintf("Converting %s to %s", file, fileNew))
 			if fileExists(fmt.Sprintf("./data_final/%s", fileNew)) {
 				continue mainloop
 			}
+			utils.ReportMessage(fmt.Sprintf("Converting %s to %s", file, fileNew))
 			o, err := exec.Command("bash", "-c", fmt.Sprintf("cwebp -q 95 -resize 500 500 ./data/%s -o ./data_final/%s", file, fileNew)).Output()
 			if err != nil {
 				utils.WrapErrorLog(err.Error())

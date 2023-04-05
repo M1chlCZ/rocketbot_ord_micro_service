@@ -11,6 +11,7 @@ import (
 	"api/services"
 	"api/utils"
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -101,29 +102,26 @@ func main() {
 // @Failure      500  {object}  models.ErrorHTTP
 // @Router       /address [get]
 func getAddress(c *fiber.Ctx) error {
-	dm := services.GetDaemon()
+	//dm := services.GetDaemon()
 	type Address struct {
 		Address string `json:"address"`
 	}
-	addr, err := cmd.CallJSON[Address]("bash", "-c", "/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord wallet receive")
+	addr, err := cmd.CallJSONNonLock[Address]("bash", "-c", "/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord wallet receive")
 	if err != nil {
-		utils.WrapErrorLog(err.Error())
 		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
 	}
-	privKey, err := coind.WrapDaemon(dm, 1, "dumbprivkey", addr.Address)
-	if err != nil {
-		utils.WrapErrorLog(err.Error())
-		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
-	}
+	//privKey, err := coind.WrapDaemon(dm, 1, "dumpprivkey", addr.Address)
+	//if err != nil {
+	//	return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
+	//}
 	return c.Status(http.StatusOK).JSON(&models.NewAddressRequest{
 		Address: addr.Address,
-		PrivKey: string(privKey),
 	})
 }
 
 // Send inscription godoc
-// @Summary      Send Inscription
-// @Description  Send Inscription
+// @Summary      Send an Inscription
+// @Description  Send an Inscription
 // @Tags         Inscriptions
 // @Accept       json
 // @Produce      json
@@ -142,14 +140,31 @@ func sendInscription(c *fiber.Ctx) error {
 	if req.Address == "" {
 		return utils.ReportError(c, "Address is empty", http.StatusBadRequest)
 	}
-	if req.FeeRate == 0 {
-		return utils.ReportError(c, "FeeRate is empty", http.StatusBadRequest)
+	if req.InscriptionID == "" {
+		return utils.ReportError(c, "Inscription id is empty", http.StatusBadRequest)
+	}
+	dm := services.GetDaemon()
+	sv, err := coind.WrapDaemon(dm, 1, "estimatesmartfee", 5, "economical")
+	if err != nil {
+		utils.WrapErrorLog(err.Error())
+		return utils.ReportError(c, "Cannot estimate fee rate", http.StatusInternalServerError)
+	}
+	var fRate models.FeeRate
+	err = json.Unmarshal(sv, &fRate)
+	if err != nil {
+		return utils.ReportError(c, "Cannot estimate fee rate", http.StatusInternalServerError)
+	}
+
+	feeRate := int(fRate.Feerate / 1024 * 100000000)
+
+	if feeRate == 0 {
+		return utils.ReportError(c, "FeeRate estimation error", http.StatusBadRequest)
 	}
 	if req.InscriptionID == "" {
 		return utils.ReportError(c, "Inscription id is empty", http.StatusBadRequest)
 	}
 
-	s, err := cmd.CallJSON[models.Inscribe]("bash", "-c", fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord wallet send --fee-rate %d %s %s", req.FeeRate, req.Address, req.InscriptionID))
+	s, err := cmd.CallJSON[models.Inscribe]("bash", "-c", fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord wallet send --fee-rate %d %s %s", feeRate, req.Address, req.InscriptionID))
 	if err != nil {
 		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
 	}
@@ -159,8 +174,8 @@ func sendInscription(c *fiber.Ctx) error {
 }
 
 // Mint godoc
-// @Summary      Mint Inscription
-// @Description  Mint Inscription
+// @Summary      Mint an Inscription
+// @Description  Mint an Inscription
 // @Tags         Inscriptions
 // @Accept       json
 // @Produce      json
@@ -177,15 +192,27 @@ func mint(c *fiber.Ctx) error {
 		return utils.ReportError(c, err.Error(), http.StatusBadRequest)
 	}
 
-	if req.FeeRate == 0 {
-		return utils.ReportError(c, "FeeRate is empty", http.StatusBadRequest)
-	}
 	if req.Format == "" {
 		return utils.ReportError(c, "Format is empty", http.StatusBadRequest)
 	}
 	if req.Base64 == "" {
 		return utils.ReportError(c, "Base64 is empty", http.StatusBadRequest)
 	}
+
+	dm := services.GetDaemon()
+	sv, err := coind.WrapDaemon(dm, 1, "estimatesmartfee", 5, "economical")
+	if err != nil {
+		utils.WrapErrorLog(err.Error())
+		return utils.ReportError(c, "Cannot estimate fee rate", http.StatusInternalServerError)
+	}
+	var fRate models.FeeRate
+	err = json.Unmarshal(sv, &fRate)
+	if err != nil {
+		return utils.ReportError(c, "Cannot estimate fee rate", http.StatusInternalServerError)
+	}
+
+	feeRate := int(fRate.Feerate / 1024 * 100000000)
+
 	byteArray, err := utils.DecodePayload([]byte(req.Base64))
 	if err != nil {
 		return utils.ReportError(c, err.Error(), http.StatusBadRequest)
@@ -198,7 +225,7 @@ func mint(c *fiber.Ctx) error {
 		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
 	}
 
-	s, err := cmd.CallJSON[models.Inscribe]("bash", "-c", fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord inscribe --dry-run --fee-rate %d %s", req.FeeRate, fileName))
+	s, err := cmd.CallJSON[models.Inscribe]("bash", "-c", fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord inscribe --dry-run --fee-rate %d %s", feeRate, fileName))
 	if err != nil {
 		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
 	}
@@ -208,19 +235,44 @@ func mint(c *fiber.Ctx) error {
 }
 
 // Get detailed list of inscriptions godoc
-// @Summary      List Inscription
-// @Description  List Inscription
+// @Summary      List of Inscriptions in the wallet
+// @Description  List of Inscriptions in the wallet
 // @Tags         Inscriptions
 // @Accept       json
 // @Produce      json
+// @Param page query int false "Page number"
+// @Param pageSize query int false "Number of items per page"
 // @Success      200  {object}  models.ListInscriptionsResponse
 // @Failure      400  {object}  models.ErrorHTTP
 // @Failure      409  {object}  models.ErrorHTTP
 // @Failure      500  {object}  models.ErrorHTTP
 // @Router       /inscriptions [get]
 func getInscriptions(c *fiber.Ctx) error {
-	res, err := db.ReadArrayStruct[models.TxTable]("SELECT * FROM TRANSACTIONS_ORD")
-	if err != nil {
+	pg := c.Query("page", "0")
+	pgSize := c.Query("pageSize", "0")
+
+	pgInt, err := strconv.Atoi(pg)
+	pgSizeInt, err2 := strconv.Atoi(pgSize)
+	if err != nil || err2 != nil {
+		return utils.ReportError(c, err.Error(), http.StatusBadRequest)
+	}
+	req := &models.TxRequest{
+		Page:     pgInt,
+		PageSize: pgSizeInt,
+	}
+	pageSize := req.PageSize
+	page := (req.Page - 1) * req.PageSize
+	var res []models.TxTable
+	var errDB error
+	if pageSize == 0 && page == 0 {
+		res, errDB = db.ReadArrayStruct[models.TxTable]("SELECT * FROM TRANSACTIONS_ORD")
+	} else {
+		res, errDB = db.ReadArrayStruct[models.TxTable](`SELECT * FROM TRANSACTIONS_ORD
+WHERE oid NOT IN ( SELECT oid FROM TRANSACTIONS_ORD
+                   ORDER BY id LIMIT ? )
+ORDER BY id LIMIT ?`, page, pageSize)
+	}
+	if errDB != nil {
 		utils.WrapErrorLog(err.Error())
 		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
 	}
@@ -252,13 +304,13 @@ func getInscriptions(c *fiber.Ctx) error {
 }
 
 // ListTransaction godoc
-// @Summary      List transactions from BTC Core
-// @Description  List transactions from BTC Core
+// @Summary      List of transactions in the BTC Core
+// @Description  List of transactions in the BTC Core
 // @Tags         Transactions
 // @Accept       json
 // @Produce      json
-// @Param page query int true "Page number"
-// @Param pageSize query int true "Number of items per page"
+// @Param page query int false "Page number"
+// @Param pageSize query int false "Number of items per page"
 // @Success      200  {object}  models.ListTransactions
 // @Failure      400  {object}  models.ErrorHTTP
 // @Failure      409  {object}  models.ErrorHTTP
@@ -280,9 +332,14 @@ func getTransaction(c *fiber.Ctx) error {
 	}
 
 	//checks
-	if req.Page < 1 {
-		return utils.ReportError(c, "Page must be greater than 0", http.StatusBadRequest)
+	if req.PageSize == 0 {
+		pgSizeInt = 50
 	}
+
+	if req.Page == 0 {
+		pgInt = 1
+	}
+
 	if req.PageSize < 1 && req.PageSize > 100 {
 		return utils.ReportError(c, "Page size must be greater than 0 and not more than 100", http.StatusBadRequest)
 	}

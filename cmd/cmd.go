@@ -24,6 +24,19 @@ func CallJSON[T any](command string, args ...string) (T, error) {
 	return result, nil
 }
 
+func CallJSONNonLock[T any](command string, args ...string) (T, error) {
+	var result T
+	r, err := exec.Command(command, args...).Output()
+	if err != nil {
+		return getZero[T](), err
+	}
+	err = json.Unmarshal(r, &result)
+	if err != nil {
+		return getZero[T](), err
+	}
+	return result, nil
+}
+
 func CallString(command string, args ...string) (string, error) {
 	s.Lock()
 	defer s.Unlock()

@@ -17,20 +17,17 @@ type TxRequest struct {
 }
 
 type MintRequest struct {
-	FeeRate int    `json:"feeRate"`
-	Format  string `json:"format"`
-	Base64  string `json:"base64"`
+	Format string `json:"format"`
+	Base64 string `json:"base64"`
 }
 
 type SendRequest struct {
-	FeeRate       int    `json:"feeRate"`
 	Address       string `json:"Address"`
 	InscriptionID string `json:"InscriptionID"`
 }
 
 type NewAddressRequest struct {
 	Address string `json:"address"`
-	PrivKey string `json:"privKey"`
 }
 
 type ListInscriptionsResponse struct {

@@ -6,7 +6,6 @@ import (
 	"api/db"
 	"api/models"
 	"api/utils"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -14,23 +13,7 @@ import (
 )
 
 func GetInscriptions() {
-	s2, err := cmd.CallString("bash", "-c", "cat /home/dfwplay/.bitcoin/.cookie")
-	if err != nil {
-		utils.WrapErrorLog(err.Error())
-		return
-	}
-
-	s := strings.Split(s2, ":")
-	daemon := &models.BitcoinDaemon{
-		ID:         0,
-		WalletUser: "__cookie__",
-		WalletPass: s[1],
-		WalletPort: 12300,
-		Wallet:     "/wallet/ord",
-		CoinID:     0,
-		IP:         "127.0.0.1",
-		PassPhrase: sql.NullString{},
-	}
+	daemon := GetDaemon()
 
 	callString, err := cmd.CallArrayJSON[models.Inscriptions]("bash", "-c", "/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord wallet inscriptions")
 	if err != nil {
