@@ -7,9 +7,6 @@ import (
 )
 
 const (
-	// RpcclientTimeout VERSION represents bicoind package version
-	// Version = 0.1
-	// RpcclientTimeout DEFAULT_RPCCLIENT_TIMEOUT represent http timeout for rcp client
 	RpcclientTimeout = 15
 )
 

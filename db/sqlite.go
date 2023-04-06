@@ -70,7 +70,7 @@ func InitDB() error {
 func initTables(db *sqlx.DB) {
 	createTxTable := `CREATE TABLE IF NOT EXISTS TRANSACTIONS_ORD (
 		"id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,	
-		"ord_id" TEXT NOT NULL UNIQUE,
+		"ord_id" TEXT NOT NULL,
 		"tx_id" TEXT NOT NULL UNIQUE,	
 		"bc_address" TEXT NOT NULL,
 		"link" TEXT NOT NULL,

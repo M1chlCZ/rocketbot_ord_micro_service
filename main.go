@@ -18,6 +18,7 @@ import (
 	"github.com/gofiber/swagger"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
 	"strconv"
 	"strings"
@@ -167,6 +168,15 @@ func sendInscription(c *fiber.Ctx) error {
 	s, err := cmd.CallJSON[models.Inscribe]("bash", "-c", fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord wallet send --fee-rate %d %s %s", feeRate, req.Address, req.InscriptionID))
 	if err != nil {
 		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
+	}
+
+	err = exec.Command("bash", "-c", fmt.Sprintf(fmt.Sprintf("rm %s/api/data_final/%s.webp", utils.GetHomeDir(), req.InscriptionID[:8]))).Run()
+	if err != nil {
+		utils.WrapErrorLog("Can't delete file in data_final")
+	}
+	err = exec.Command("bash", "-c", fmt.Sprintf(fmt.Sprintf("rm %s/api/data/%s.*", utils.GetHomeDir(), req.InscriptionID[:8]))).Run()
+	if err != nil {
+		utils.WrapErrorLog("Can't delete file in data")
 	}
 
 	return c.Status(http.StatusOK).JSON(s)
