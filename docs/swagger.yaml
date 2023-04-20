@@ -9,6 +9,15 @@ definitions:
       status:
         type: string
     type: object
+  models.FeeResponse:
+    properties:
+      feeRate:
+        type: integer
+      hasError:
+        type: boolean
+      status:
+        type: string
+    type: object
   models.Inscribe:
     properties:
       commit:
@@ -18,6 +27,15 @@ definitions:
       inscription:
         type: string
       reveal:
+        type: string
+    type: object
+  models.InscriptionPicResponse:
+    properties:
+      base64:
+        type: string
+      hasError:
+        type: boolean
+      status:
         type: string
     type: object
   models.ListInscriptionsResponse:
@@ -35,6 +53,8 @@ definitions:
     properties:
       base64:
         type: string
+      feeRate:
+        type: integer
       format:
         type: string
     type: object
@@ -43,12 +63,23 @@ definitions:
       address:
         type: string
     type: object
+  models.RawTxResponse:
+    properties:
+      hasError:
+        type: boolean
+      rawTx:
+        type: string
+      status:
+        type: string
+    type: object
   models.SendRequest:
     properties:
       Address:
         type: string
       InscriptionID:
         type: string
+      feeRate:
+        type: integer
     type: object
   models.TxTable:
     properties:
@@ -108,6 +139,66 @@ paths:
       summary: Mint Inscription
       tags:
       - Daemon
+  /feerate:
+    get:
+      consumes:
+      - application/json
+      description: Get fee rate for transaction
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.FeeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+      summary: Get fee rate for transaction
+      tags:
+      - Fees
+  /inscription/image:
+    get:
+      consumes:
+      - application/json
+      description: Get Base64 image from Inscription ID
+      parameters:
+      - description: Inscription ID
+        in: query
+        name: idInscription
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.InscriptionPicResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+      summary: Get Base64 image from Inscription ID
+      tags:
+      - Inscriptions
   /inscriptions:
     get:
       consumes:
@@ -212,6 +303,39 @@ paths:
       summary: Send an Inscription
       tags:
       - Inscriptions
+  /transaction/raw:
+    get:
+      consumes:
+      - application/json
+      description: Get Raw transaction from BTC code
+      parameters:
+      - description: Transaction ID
+        in: query
+        name: tx
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.RawTxResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+      summary: Get Raw transaction from BTC code
+      tags:
+      - Transactions
   /transactions:
     get:
       consumes:

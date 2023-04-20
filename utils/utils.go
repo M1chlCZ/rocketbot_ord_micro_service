@@ -18,13 +18,12 @@ import (
 )
 
 const (
-	VERSION          = "0.1.0.3"
+	VERSION          = "0.1.1.1"
 	STATUS    string = "status"
 	OK        string = "OK"
 	FAIL      string = "FAIL"
 	ERROR     string = "hasError"
 	ServerUrl string = "184.174.35.183"
-	GPORT     int    = 6900
 )
 
 func InlineIF[T any](condition bool, a T, b T) T {
@@ -194,4 +193,12 @@ func ArrContains(s []string, e string) bool {
 		}
 	}
 	return false
+}
+
+func FileExists(filePath string) bool {
+	_, err := os.Stat(filePath)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return true
 }

@@ -91,6 +91,10 @@ func POSTRequest[T any](endpoint string, data *fiber.Map) (T, error) {
 }
 
 func DownloadImage(insciptID string) (string, error) {
+	// Check if file exist in data_final folder
+	if FileExists(fmt.Sprintf("%s/api/data_final/%s.webp", GetHomeDir(), insciptID[:8])) {
+		return fmt.Sprintf("%s/api/data_final/%s.webp", GetHomeDir(), insciptID[:8]), nil
+	}
 	contentLink := fmt.Sprintf("https://ordinals.com/content/%s", insciptID)
 	// Send HTTP GET request to the URL
 	resp, err := http.Get(contentLink)
@@ -101,7 +105,6 @@ func DownloadImage(insciptID string) (string, error) {
 
 	// Extract the file format from the Content-Type header
 	contentType := resp.Header.Get("Content-Type")
-	ReportMessage("Content-Type: " + contentType)
 	dataType := strings.Split(contentType, "/")[0]
 	if dataType != "image" {
 		return "", errors.New("URL does not point to an image")

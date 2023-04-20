@@ -21,7 +21,7 @@ mainloop:
 		if !strings.Contains(file, ".webp") {
 			fileOld := strings.Split(file, ".")
 			fileNew := strings.ReplaceAll(file, fmt.Sprintf(".%s", fileOld[1]), ".webp")
-			if fileExists(fmt.Sprintf("./data_final/%s", fileNew)) {
+			if utils.FileExists(fmt.Sprintf("./data_final/%s", fileNew)) {
 				continue mainloop
 			}
 			utils.ReportMessage(fmt.Sprintf("Converting %s to %s", file, fileNew))
@@ -34,7 +34,7 @@ mainloop:
 		} else {
 			fileOld := strings.Split(file, ".")
 			fileNew := strings.ReplaceAll(file, fmt.Sprintf(".%s", fileOld[1]), ".webp")
-			if fileExists(fmt.Sprintf("./data_final/%s", fileNew)) {
+			if utils.FileExists(fmt.Sprintf("./data_final/%s", fileNew)) {
 				continue mainloop
 			}
 			utils.ReportMessage(fmt.Sprintf("Converting %s to %s", file, fileNew))
@@ -46,7 +46,11 @@ mainloop:
 			utils.WrapErrorLog(string(o))
 		}
 	}
-	//convert files to webp
+	err = exec.Command("bash", "-c", fmt.Sprintf(fmt.Sprintf("rm %s/api/data/*", utils.GetHomeDir()))).Run()
+	if err != nil {
+		utils.WrapErrorLog("Can't delete file in data")
+	}
+	utils.ReportMessage("- Done -")
 }
 
 func listFilesInFolder(folderPath string) ([]string, error) {
@@ -82,12 +86,4 @@ func copyFile(source string, destination string) error {
 	}
 
 	return nil
-}
-
-func fileExists(filePath string) bool {
-	_, err := os.Stat(filePath)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return true
 }

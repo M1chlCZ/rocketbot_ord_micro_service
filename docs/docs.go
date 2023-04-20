@@ -66,6 +66,97 @@ const docTemplate = `{
                 }
             }
         },
+        "/feerate": {
+            "get": {
+                "description": "Get fee rate for transaction",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Fees"
+                ],
+                "summary": "Get fee rate for transaction",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.FeeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    }
+                }
+            }
+        },
+        "/inscription/image": {
+            "get": {
+                "description": "Get Base64 image from Inscription ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Inscriptions"
+                ],
+                "summary": "Get Base64 image from Inscription ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Inscription ID",
+                        "name": "idInscription",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.InscriptionPicResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    }
+                }
+            }
+        },
         "/inscriptions": {
             "get": {
                 "description": "List of Inscriptions in the wallet",
@@ -202,6 +293,56 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/models.Inscribe"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    }
+                }
+            }
+        },
+        "/transaction/raw": {
+            "get": {
+                "description": "Get Raw transaction from BTC code",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Transactions"
+                ],
+                "summary": "Get Raw transaction from BTC code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Transaction ID",
+                        "name": "tx",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.RawTxResponse"
                         }
                     },
                     "400": {
@@ -365,6 +506,20 @@ const docTemplate = `{
                 }
             }
         },
+        "models.FeeResponse": {
+            "type": "object",
+            "properties": {
+                "feeRate": {
+                    "type": "integer"
+                },
+                "hasError": {
+                    "type": "boolean"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
         "models.Inscribe": {
             "type": "object",
             "properties": {
@@ -378,6 +533,20 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "reveal": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.InscriptionPicResponse": {
+            "type": "object",
+            "properties": {
+                "base64": {
+                    "type": "string"
+                },
+                "hasError": {
+                    "type": "boolean"
+                },
+                "status": {
                     "type": "string"
                 }
             }
@@ -405,6 +574,9 @@ const docTemplate = `{
                 "base64": {
                     "type": "string"
                 },
+                "feeRate": {
+                    "type": "integer"
+                },
                 "format": {
                     "type": "string"
                 }
@@ -418,6 +590,20 @@ const docTemplate = `{
                 }
             }
         },
+        "models.RawTxResponse": {
+            "type": "object",
+            "properties": {
+                "hasError": {
+                    "type": "boolean"
+                },
+                "rawTx": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
         "models.SendRequest": {
             "type": "object",
             "properties": {
@@ -426,6 +612,9 @@ const docTemplate = `{
                 },
                 "InscriptionID": {
                     "type": "string"
+                },
+                "feeRate": {
+                    "type": "integer"
                 }
             }
         },
@@ -468,6 +657,8 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "Private API for ORD",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {
