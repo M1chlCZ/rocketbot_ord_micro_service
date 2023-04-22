@@ -137,3 +137,20 @@ type FeeRate struct {
 	Feerate float64 `json:"feerate"`
 	Blocks  int     `json:"blocks"`
 }
+
+type RawTransaction struct {
+	Txid          string `json:"txid"`
+	Hash          string `json:"hash"`
+	Version       int    `json:"version"`
+	Size          int    `json:"size"`
+	Vsize         int    `json:"vsize"`
+	Weight        int    `json:"weight"`
+	Locktime      int    `json:"locktime"`
+	Vin           []Vin  `json:"vin"`
+	Vout          []Vout `json:"vout"`
+	Hex           string `json:"hex"`
+	Blockhash     string `json:"blockhash"`
+	Confirmations int    `json:"confirmations"`
+	Time          int    `json:"time"`
+	Blocktime     int    `json:"blocktime"`
+}

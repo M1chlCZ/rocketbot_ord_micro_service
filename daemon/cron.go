@@ -8,7 +8,7 @@ import (
 )
 
 func StartCron() {
-	err := gocron.Every(10).Minutes().Do(index)
+	err := gocron.Every(5).Minutes().Do(index)
 	err = gocron.Every(1).Hour().Do(getInscriptions)
 
 	if err != nil {

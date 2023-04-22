@@ -6,6 +6,8 @@ import (
 	"api/daemon"
 	"api/db"
 	_ "api/docs"
+	"api/grpcClient"
+	"api/grpcModels"
 	"api/internal"
 	"api/models"
 	"api/services"
@@ -58,6 +60,8 @@ func StartORDApi() {
 	app.Get("/api/address", getAddress)
 	app.Get("/api/feerate", getFeeRate)
 
+	app.Post("api/nsfw", testPic)
+
 	go func() {
 		err := app.Listen(fmt.Sprintf(":%d", 7500))
 		if err != nil {
@@ -77,6 +81,40 @@ func StartORDApi() {
 	os.Exit(0)
 }
 
+// Send inscription godoc
+// @Summary      Test picture for NSFW content
+// @Description  Test picture for NSFW content
+// @Tags         NSFW
+// @Accept       json
+// @Produce      json
+// @Param 		 data body models.TestPicReq true "File in base64 and filename"
+// @Success      200  {object}  models.TestPicResponse
+// @Failure      400  {object}  models.ErrorHTTP
+// @Failure      409  {object}  models.ErrorHTTP
+// @Failure      500  {object}  models.ErrorHTTP
+// @Router       /nsfw [post]
+func testPic(c *fiber.Ctx) error {
+	var req models.TestPicReq
+	err := c.BodyParser(&req)
+	if err != nil {
+		return utils.ReportError(c, "Cannot parse body", http.StatusBadRequest)
+	}
+	tx := &grpcModels.NSFWRequest{
+		Base64:   req.Base64,
+		Filename: req.Filename,
+	}
+	res, err := grpcClient.DetectNSFW(tx)
+	if err != nil {
+		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
+	}
+	return c.JSON(&fiber.Map{
+		"nsfwPicture": res.NsfwPicture,
+		"nsfwText":    res.NsfwText,
+		utils.STATUS:  utils.OK,
+		utils.ERROR:   false,
+	})
+}
+
 // Get Raw transaction godoc
 // @Summary      Get Raw transaction from BTC code
 // @Description  Get Raw transaction from BTC code
@@ -84,7 +122,7 @@ func StartORDApi() {
 // @Accept       json
 // @Produce      json
 // @Param tx query string true "Transaction ID"
-// @Success      200  {object}  models.RawTxResponse
+// @Success      200  {object}  models.RawTransaction
 // @Failure      400  {object}  models.ErrorHTTP
 // @Failure      409  {object}  models.ErrorHTTP
 // @Failure      500  {object}  models.ErrorHTTP
@@ -94,18 +132,25 @@ func getRawTx(c *fiber.Ctx) error {
 	if tx == "" {
 		return utils.ReportError(c, "Missing tx", http.StatusBadRequest)
 	}
+	utils.ReportMessage(fmt.Sprintf("Getting raw transaction %s", tx))
 	dm := services.GetDaemon()
-	sv, err := coind.WrapDaemon(dm, 1, "getrawtransaction", tx, 1)
+	sv, err := coind.WrapDaemon(dm, 1, "getrawtransaction", tx, true)
 	if err != nil {
 		utils.WrapErrorLog(err.Error())
 		return utils.ReportError(c, "Cannot get raw transaction", http.StatusInternalServerError)
 	}
-	rs := models.RawTxResponse{
-		RawTx:    string(sv),
-		HasError: false,
-		Status:   utils.OK,
+	var trans models.RawTransaction
+	err = json.Unmarshal(sv, &trans)
+	if err != nil {
+		utils.WrapErrorLog(err.Error())
+		return utils.ReportError(c, "Cannot get raw transaction", http.StatusInternalServerError)
 	}
-	return c.JSON(rs)
+	//rs := models.RawTxResponse{
+	//	RawTx:    trans,
+	//	HasError: false,
+	//	Status:   utils.OK,
+	//}
+	return c.JSON(trans)
 }
 
 // Get Base64 image from Inscription ID godoc
@@ -125,6 +170,7 @@ func getImage(c *fiber.Ctx) error {
 	if tx == "" {
 		return utils.ReportError(c, "Missing Inscription ID", http.StatusBadRequest)
 	}
+	utils.ReportMessage(fmt.Sprintf("Getting image for inscription %s", tx))
 	file := "./data_final/" + tx[:8] + ".webp"
 	b64, err := utils.ReadFileAsBase64(file)
 	if err != nil {
@@ -157,6 +203,7 @@ func getFeeRate(c *fiber.Ctx) error {
 		utils.WrapErrorLog(err.Error())
 		return utils.ReportError(c, "Cannot estimate fee rate", http.StatusInternalServerError)
 	}
+	utils.ReportMessage(fmt.Sprintf("Fee rate %s sats", sv))
 	var fRate models.FeeRate
 	err = json.Unmarshal(sv, &fRate)
 	if err != nil {
@@ -191,6 +238,7 @@ func getAddress(c *fiber.Ctx) error {
 	if err != nil {
 		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
 	}
+	utils.ReportMessage(fmt.Sprintf("Get addr: %s", addr.Address))
 	//privKey, err := coind.WrapDaemon(dm, 1, "dumpprivkey", addr.Address)
 	//if err != nil {
 	//	return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
@@ -218,6 +266,7 @@ func sendInscription(c *fiber.Ctx) error {
 	if err != nil {
 		return utils.ReportError(c, err.Error(), http.StatusBadRequest)
 	}
+	utils.ReportMessage(fmt.Sprintf("Send inscription id: %s", req.InscriptionID))
 	if req.Address == "" {
 		return utils.ReportError(c, "Address is empty", http.StatusBadRequest)
 	}
@@ -267,7 +316,7 @@ func mint(c *fiber.Ctx) error {
 	if err != nil {
 		return utils.ReportError(c, err.Error(), http.StatusBadRequest)
 	}
-
+	utils.ReportMessage(fmt.Sprintf("Mint inscription id"))
 	if req.Format == "" {
 		return utils.ReportError(c, "Format is empty", http.StatusBadRequest)
 	}
@@ -303,6 +352,31 @@ func mint(c *fiber.Ctx) error {
 	err = os.WriteFile(fileName, byteArray, 0644)
 	if err != nil {
 		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
+	}
+	tx := &grpcModels.NSFWRequest{
+		Base64:   req.Base64,
+		Filename: fmt.Sprintf("pic.%s", req.Format),
+	}
+	res, err := grpcClient.DetectNSFW(tx)
+	if err != nil {
+		utils.WrapErrorLog(err.Error())
+		return utils.ReportError(c, "Cannot check if NSFW image", http.StatusInternalServerError)
+	}
+
+	if res.NsfwPicture {
+		err = exec.Command("bash", "-c", fmt.Sprintf(fmt.Sprintf("rm %s", fileName))).Run()
+		if err != nil {
+			utils.WrapErrorLog("Can't delete file in data")
+		}
+		return utils.ReportError(c, "NSFW image", http.StatusConflict)
+	}
+
+	if res.NsfwText {
+		err = exec.Command("bash", "-c", fmt.Sprintf(fmt.Sprintf("rm %s", fileName))).Run()
+		if err != nil {
+			utils.WrapErrorLog("Can't delete file in data")
+		}
+		return utils.ReportError(c, "NSFW Text in the image", http.StatusConflict)
 	}
 
 	s, err := cmd.CallJSON[models.Inscribe]("bash", "-c", fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord inscribe --fee-rate %d %s", req.FeeRate, fileName))
@@ -345,8 +419,10 @@ func getInscriptions(c *fiber.Ctx) error {
 	var res []models.TxTable
 	var errDB error
 	if pageSize == 0 && page == 0 {
+		utils.ReportMessage(fmt.Sprintf("Get TX -> Offset: all, Limit: all"))
 		res, errDB = db.ReadArrayStruct[models.TxTable]("SELECT * FROM TRANSACTIONS_ORD")
 	} else {
+		utils.ReportMessage(fmt.Sprintf("Get TX -> Offset: %d, Page: %d", page, req.PageSize))
 		res, errDB = db.ReadArrayStruct[models.TxTable](`SELECT * FROM TRANSACTIONS_ORD
 WHERE oid NOT IN ( SELECT oid FROM TRANSACTIONS_ORD
                    ORDER BY id LIMIT ? )
@@ -426,7 +502,7 @@ func getTransaction(c *fiber.Ctx) error {
 
 	pageSize := req.PageSize
 	page := (req.Page - 1) * req.PageSize
-	utils.ReportMessage(fmt.Sprintf("Offset: %d, Page: %d", page, req.PageSize))
+	utils.ReportMessage(fmt.Sprintf("Get TX -> Offset: %d, Page: %d", page, req.PageSize))
 
 	list, err := db.ReadArrayStruct[models.ListTransactionsDB](`SELECT * FROM LIST_TRANSACTIONS
 WHERE oid NOT IN ( SELECT oid FROM LIST_TRANSACTIONS

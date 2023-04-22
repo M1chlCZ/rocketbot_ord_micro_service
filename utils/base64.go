@@ -4,9 +4,9 @@ import (
 	encoder "encoding/base64"
 )
 
-func EncodePayload(base64 []byte) string {
+func EncodePayload(data []byte) string {
 	//Base64 Encode
-	return encoder.StdEncoding.EncodeToString(base64)
+	return encoder.StdEncoding.EncodeToString(data)
 }
 
 func DecodePayload(base64 []byte) ([]byte, error) {

@@ -19,3 +19,6 @@
 .config
 cli/upload_rual
 .data
+/scripts/assets/
+/scripts/storage/
+/ts/

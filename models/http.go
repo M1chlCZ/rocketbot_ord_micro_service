@@ -45,13 +45,25 @@ type FeeResponse struct {
 }
 
 type RawTxResponse struct {
-	HasError bool   `json:"hasError"`
-	RawTx    string `json:"rawTx"`
-	Status   string `json:"status"`
+	HasError bool           `json:"hasError"`
+	RawTx    RawTransaction `json:"rawTx"`
+	Status   string         `json:"status"`
 }
 
 type InscriptionPicResponse struct {
 	HasError bool   `json:"hasError"`
 	Base64   string `json:"base64"`
+	Status   string `json:"status"`
+}
+
+type TestPicReq struct {
+	Base64   string `json:"base64"`
+	Filename string `json:"filename"`
+}
+
+type TestPicResponse struct {
+	HasError bool   `json:"hasError"`
+	Nsfw     bool   `json:"nsfwPicture"`
+	NsfwText bool   `json:"nsfwText"`
 	Status   string `json:"status"`
 }

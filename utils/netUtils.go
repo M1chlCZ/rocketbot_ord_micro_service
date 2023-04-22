@@ -1,14 +1,20 @@
 package utils
 
 import (
+	"api/grpcClient"
+	"api/grpcModels"
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
+	"golang.org/x/image/webp"
+	"image/png"
 	"io"
+	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"strings"
 )
 
@@ -106,6 +112,7 @@ func DownloadImage(insciptID string) (string, error) {
 	// Extract the file format from the Content-Type header
 	contentType := resp.Header.Get("Content-Type")
 	dataType := strings.Split(contentType, "/")[0]
+	fileFormat := strings.Split(contentType, "/")[1]
 	if dataType != "image" {
 		return "", errors.New("URL does not point to an image")
 	}
@@ -130,6 +137,71 @@ func DownloadImage(insciptID string) (string, error) {
 	_, err = io.Copy(file, resp.Body)
 	if err != nil {
 		return "", err
+	}
+
+	fileToOpen := filename
+
+	if fileFormat == "webp" {
+		f0, err := os.Open(filename)
+		if err != nil {
+			WrapErrorLog(err.Error())
+			return "", err
+		}
+		defer f0.Close()
+		img0, err := webp.Decode(f0)
+		if err != nil {
+			WrapErrorLog(err.Error())
+			return "", err
+		}
+		filepng := fmt.Sprintf("%s/api/data/%s.%s", GetHomeDir(), insciptID[:8], "png")
+		pngFile, err := os.Create(filepng)
+		if err != nil {
+			fmt.Println(err)
+		}
+		err = png.Encode(pngFile, img0)
+		if err != nil {
+			fmt.Println(err)
+		}
+		defer func() {
+			err := os.Remove(filepng)
+			if err != nil {
+				log.Println(err.Error())
+			}
+		}()
+		fileToOpen = filepng
+	}
+
+	fileBytes, err := os.ReadFile(fileToOpen)
+	if err != nil {
+		return "", err
+	}
+
+	base64 := EncodePayload(fileBytes)
+
+	tx := &grpcModels.NSFWRequest{
+		Base64:   base64,
+		Filename: fmt.Sprintf("pic.%s", fileFormat),
+	}
+	res, err := grpcClient.DetectNSFW(tx)
+	if err != nil {
+		WrapErrorLog(err.Error())
+		return "", err
+	}
+
+	if res.NsfwPicture {
+		err = exec.Command("bash", "-c", fmt.Sprintf(fmt.Sprintf("rm %s", filename))).Run()
+		if err != nil {
+			WrapErrorLog("Can't delete NSFW file in data")
+		}
+		return "", ReturnError("NSFW image")
+	}
+
+	if res.NsfwText {
+		err = exec.Command("bash", "-c", fmt.Sprintf(fmt.Sprintf("rm %s", filename))).Run()
+		if err != nil {
+			WrapErrorLog("Can't delete file in data")
+		}
+		return "", ReturnError("NSFW Text in the image")
 	}
 
 	return filename, nil

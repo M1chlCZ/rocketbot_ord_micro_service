@@ -63,13 +63,59 @@ definitions:
       address:
         type: string
     type: object
-  models.RawTxResponse:
+  models.RawTransaction:
     properties:
-      hasError:
-        type: boolean
-      rawTx:
+      blockhash:
         type: string
-      status:
+      blocktime:
+        type: integer
+      confirmations:
+        type: integer
+      hash:
+        type: string
+      hex:
+        type: string
+      locktime:
+        type: integer
+      size:
+        type: integer
+      time:
+        type: integer
+      txid:
+        type: string
+      version:
+        type: integer
+      vin:
+        items:
+          $ref: '#/definitions/models.Vin'
+        type: array
+      vout:
+        items:
+          $ref: '#/definitions/models.Vout'
+        type: array
+      vsize:
+        type: integer
+      weight:
+        type: integer
+    type: object
+  models.ScriptPubKey:
+    properties:
+      address:
+        type: string
+      asm:
+        type: string
+      desc:
+        type: string
+      hex:
+        type: string
+      type:
+        type: string
+    type: object
+  models.ScriptSig:
+    properties:
+      asm:
+        type: string
+      hex:
         type: string
     type: object
   models.SendRequest:
@@ -80,6 +126,24 @@ definitions:
         type: string
       feeRate:
         type: integer
+    type: object
+  models.TestPicReq:
+    properties:
+      base64:
+        type: string
+      filename:
+        type: string
+    type: object
+  models.TestPicResponse:
+    properties:
+      hasError:
+        type: boolean
+      nsfwPicture:
+        type: boolean
+      nsfwText:
+        type: boolean
+      status:
+        type: string
     type: object
   models.TxTable:
     properties:
@@ -97,6 +161,30 @@ definitions:
         type: string
       tx_id:
         type: string
+    type: object
+  models.Vin:
+    properties:
+      scriptSig:
+        $ref: '#/definitions/models.ScriptSig'
+      sequence:
+        type: integer
+      txid:
+        type: string
+      txinwitness:
+        items:
+          type: string
+        type: array
+      vout:
+        type: integer
+    type: object
+  models.Vout:
+    properties:
+      "n":
+        type: integer
+      scriptPubKey:
+        $ref: '#/definitions/models.ScriptPubKey'
+      value:
+        type: number
     type: object
 host: 89.116.25.234:7500
 info:
@@ -269,6 +357,40 @@ paths:
       summary: Mint an Inscription
       tags:
       - Inscriptions
+  /nsfw:
+    post:
+      consumes:
+      - application/json
+      description: Test picture for NSFW content
+      parameters:
+      - description: File in base64 and filename
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/models.TestPicReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.TestPicResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+      summary: Test picture for NSFW content
+      tags:
+      - NSFW
   /send:
     post:
       consumes:
@@ -320,7 +442,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.RawTxResponse'
+            $ref: '#/definitions/models.RawTransaction'
         "400":
           description: Bad Request
           schema:

@@ -33,6 +33,9 @@ func main() {
 		} else if os.Args[1] == "--launchpad" {
 			utils.ReportMessage("Rest API v" + utils.VERSION + " - RocketBot API | MODE Launchpad")
 			apis.StartLaunchpadApi()
+		} else {
+			utils.WrapErrorLog("API has to be started with --ord / --launchpad")
+			os.Exit(0)
 		}
 	}
 }

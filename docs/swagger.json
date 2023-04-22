@@ -257,6 +257,58 @@
                 }
             }
         },
+        "/nsfw": {
+            "post": {
+                "description": "Test picture for NSFW content",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "NSFW"
+                ],
+                "summary": "Test picture for NSFW content",
+                "parameters": [
+                    {
+                        "description": "File in base64 and filename",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.TestPicReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.TestPicResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    }
+                }
+            }
+        },
         "/send": {
             "post": {
                 "description": "Send an Inscription",
@@ -335,7 +387,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.RawTxResponse"
+                            "$ref": "#/definitions/models.RawTransaction"
                         }
                     },
                     "400": {
@@ -583,16 +635,86 @@
                 }
             }
         },
-        "models.RawTxResponse": {
+        "models.RawTransaction": {
             "type": "object",
             "properties": {
-                "hasError": {
-                    "type": "boolean"
-                },
-                "rawTx": {
+                "blockhash": {
                     "type": "string"
                 },
-                "status": {
+                "blocktime": {
+                    "type": "integer"
+                },
+                "confirmations": {
+                    "type": "integer"
+                },
+                "hash": {
+                    "type": "string"
+                },
+                "hex": {
+                    "type": "string"
+                },
+                "locktime": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "time": {
+                    "type": "integer"
+                },
+                "txid": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "integer"
+                },
+                "vin": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Vin"
+                    }
+                },
+                "vout": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Vout"
+                    }
+                },
+                "vsize": {
+                    "type": "integer"
+                },
+                "weight": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.ScriptPubKey": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "asm": {
+                    "type": "string"
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "hex": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ScriptSig": {
+            "type": "object",
+            "properties": {
+                "asm": {
+                    "type": "string"
+                },
+                "hex": {
                     "type": "string"
                 }
             }
@@ -608,6 +730,34 @@
                 },
                 "feeRate": {
                     "type": "integer"
+                }
+            }
+        },
+        "models.TestPicReq": {
+            "type": "object",
+            "properties": {
+                "base64": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.TestPicResponse": {
+            "type": "object",
+            "properties": {
+                "hasError": {
+                    "type": "boolean"
+                },
+                "nsfwPicture": {
+                    "type": "boolean"
+                },
+                "nsfwText": {
+                    "type": "boolean"
+                },
+                "status": {
+                    "type": "string"
                 }
             }
         },
@@ -634,6 +784,43 @@
                 },
                 "tx_id": {
                     "type": "string"
+                }
+            }
+        },
+        "models.Vin": {
+            "type": "object",
+            "properties": {
+                "scriptSig": {
+                    "$ref": "#/definitions/models.ScriptSig"
+                },
+                "sequence": {
+                    "type": "integer"
+                },
+                "txid": {
+                    "type": "string"
+                },
+                "txinwitness": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "vout": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.Vout": {
+            "type": "object",
+            "properties": {
+                "n": {
+                    "type": "integer"
+                },
+                "scriptPubKey": {
+                    "$ref": "#/definitions/models.ScriptPubKey"
+                },
+                "value": {
+                    "type": "number"
                 }
             }
         }

@@ -46,10 +46,7 @@ mainloop:
 			utils.WrapErrorLog(string(o))
 		}
 	}
-	err = exec.Command("bash", "-c", fmt.Sprintf(fmt.Sprintf("rm %s/api/data/*", utils.GetHomeDir()))).Run()
-	if err != nil {
-		utils.WrapErrorLog("Can't delete file in data")
-	}
+	_ = exec.Command("bash", "-c", fmt.Sprintf(fmt.Sprintf("rm %s/api/data/*", utils.GetHomeDir()))).Run()
 	utils.ReportMessage("- Done -")
 }
 
