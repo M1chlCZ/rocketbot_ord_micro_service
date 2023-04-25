@@ -95,6 +95,12 @@ func callDaemon(c chan []byte, e chan error, wg *sync.WaitGroup, daemonCommon mo
 			}
 
 		}
+
+		if command == "backupwallet" {
+			c <- []byte("cool")
+			return
+		}
+
 		if string(p) != "null" {
 			if len(p) != 0 {
 				c <- p

@@ -13,7 +13,7 @@ import (
 )
 
 func GetInscriptions() {
-	daemon := GetDaemon()
+	dm := GetDaemon()
 
 	callString, err := cmd.CallArrayJSON[models.Inscriptions]("bash", "-c", "/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord wallet inscriptions")
 	if err != nil {
@@ -27,7 +27,7 @@ func GetInscriptions() {
 			utils.WrapErrorLog(err.Error())
 			return
 		}
-		sv, err := coind.WrapDaemon(daemon, 1, "gettransaction", txid[0], false, true)
+		sv, err := coind.WrapDaemon(dm, 1, "gettransaction", txid[0], false, true)
 		if err != nil {
 			utils.WrapErrorLog(err.Error())
 			return

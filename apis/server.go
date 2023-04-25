@@ -71,7 +71,6 @@ func StartORDApi() {
 	}()
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGTERM, syscall.SIGINT)
-	//go getTransaction()
 	utils.ReportMessage("<- Started ORD API ->")
 	<-c
 	_, cancel := context.WithTimeout(context.Background(), time.Second*15)

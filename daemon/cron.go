@@ -10,6 +10,7 @@ import (
 func StartCron() {
 	err := gocron.Every(5).Minutes().Do(index)
 	err = gocron.Every(1).Hour().Do(getInscriptions)
+	err = gocron.Every(12).Hours().Do(BackupBitcoinWallet)
 
 	if err != nil {
 		utils.WrapErrorLog(err.Error())
