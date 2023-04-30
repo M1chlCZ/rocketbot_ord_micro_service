@@ -1,10 +1,6 @@
 package main
 
-import (
-	"api/apis"
-	"api/utils"
-	"os"
-)
+import "api/apis"
 
 // @title Rocketbot ORD API
 // @version 1.0
@@ -22,20 +18,22 @@ import (
 // @host 89.116.25.234:7500
 // @BasePath /api
 func main() {
-	if len(os.Args) != 2 {
-		//apis.InitCLI()
-		utils.WrapErrorLog("API has to be started with --ord / --launchpad")
-		//utils.WrapErrorLog("Exiting")
-	} else {
-		if os.Args[1] == "--ord" {
-			utils.ReportMessage("Rest API v" + utils.VERSION + " - RocketBot API | MODE ORD")
-			apis.StartORDApi()
-		} else if os.Args[1] == "--launchpad" {
-			utils.ReportMessage("Rest API v" + utils.VERSION + " - RocketBot API | MODE Launchpad")
-			apis.StartLaunchpadApi()
-		} else {
-			utils.WrapErrorLog("API has to be started with --ord / --launchpad")
-			os.Exit(0)
-		}
-	}
+	apis.StartORDApi()
+	//if len(os.Args) != 2 {
+	//	//apis.InitCLI()
+	//	utils.WrapErrorLog("API has to be started with --ord / --launchpad")
+	//	//utils.WrapErrorLog("Exiting")
+	//} else {
+	//	if os.Args[1] == "--ord" {
+	//		utils.ReportMessage("Rest API v" + utils.VERSION + " - RocketBot API | MODE ORD")
+	//		apis.StartORDApi()
+	//	} else if os.Args[1] == "--launchpad" {
+	//		utils.ReportMessage("Rest API v" + utils.VERSION + " - RocketBot API | MODE Launchpad")
+	//		apis.StartLaunchpadApi()
+	//	} else {
+	//		utils.WrapErrorLog("API has to be started with --ord / --launchpad")
+	//		os.Exit(0)
+	//	}
+	//}
+
 }
