@@ -19,21 +19,5 @@ import "api/apis"
 // @BasePath /api
 func main() {
 	apis.StartORDApi()
-	//if len(os.Args) != 2 {
-	//	//apis.InitCLI()
-	//	utils.WrapErrorLog("API has to be started with --ord / --launchpad")
-	//	//utils.WrapErrorLog("Exiting")
-	//} else {
-	//	if os.Args[1] == "--ord" {
-	//		utils.ReportMessage("Rest API v" + utils.VERSION + " - RocketBot API | MODE ORD")
-	//		apis.StartORDApi()
-	//	} else if os.Args[1] == "--launchpad" {
-	//		utils.ReportMessage("Rest API v" + utils.VERSION + " - RocketBot API | MODE Launchpad")
-	//		apis.StartLaunchpadApi()
-	//	} else {
-	//		utils.WrapErrorLog("API has to be started with --ord / --launchpad")
-	//		os.Exit(0)
-	//	}
-	//}
-
+	//TestBTC()
 }

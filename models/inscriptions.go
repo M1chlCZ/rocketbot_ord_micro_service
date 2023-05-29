@@ -12,3 +12,8 @@ type Inscribe struct {
 	Reveal      string `json:"reveal"`
 	Fees        int    `json:"fees"`
 }
+
+type EstimateRequest struct {
+	NumberOfBlocks int    `json:"blocks"`
+	ImageURL       string `json:"imageUrl"`
+}

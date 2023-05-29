@@ -18,6 +18,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/swagger"
+	"io"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
@@ -56,6 +58,7 @@ func StartORDApi() {
 	app.Get("/api/transactions", getTransaction)
 	app.Get("/api/transaction/raw", getRawTx)
 	app.Post("/api/mint", mint)
+	app.Post("/api/estimate", estimate)
 	app.Post("/api/send", sendInscription)
 	app.Get("/api/address", getAddress)
 	app.Get("/api/feerate", getFeeRate)
@@ -78,6 +81,80 @@ func StartORDApi() {
 	defer cancel()
 	_ = app.Shutdown()
 	os.Exit(0)
+}
+
+// Estimate inscription cost godoc
+// @Summary      Estimate inscription cost !!!Don't use this method!!!
+// @Description  Estimate inscription cost !!!Don't use this method!!!
+// @Tags         Inscriptions
+// @Accept       json
+// @Produce      json
+// @Param 		 data body models.EstimateRequest true "Image URL from hosting service and number of blocks"
+// @Success      200  {object}  models.Inscribe
+// @Failure      400  {object}  models.ErrorHTTP
+// @Failure      409  {object}  models.ErrorHTTP
+// @Failure      500  {object}  models.ErrorHTTP
+// @Router       /estimate [post]
+func estimate(c *fiber.Ctx) error {
+	var req models.EstimateRequest
+	err := c.BodyParser(&req)
+	if err != nil {
+		return utils.ReportError(c, "Cannot parse body", http.StatusBadRequest)
+	}
+	if req.NumberOfBlocks < 1 {
+		return utils.ReportError(c, "Number of blocks must be greater than 0", http.StatusBadRequest)
+	}
+	// Random number generator
+	rand.NewSource(time.Now().UnixNano())
+	randName := rand.Int()
+
+	response, err := http.Get(req.ImageURL)
+	if err != nil {
+		return err
+	}
+	//if strings.Contains(typeFile, "image") {
+	//    return utils.ReportError(c, "File must be picture", http.StatusBadRequest)
+	//}
+	fileName := fmt.Sprintf("%d.%s", randName, "webp")
+	defer response.Body.Close()
+
+	// Create an empty file
+	file, err := os.Create(fileName)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Write the bytes to the file
+	_, err = io.Copy(file, response.Body)
+	if err != nil {
+		return err
+	}
+
+	// Make sure to delete the file after the function finishes
+	defer os.Remove(fileName)
+	utils.ReportMessage("File saved")
+
+	dm := services.GetDaemon()
+	sv, err := coind.WrapDaemon(dm, 1, "estimatesmartfee", req.NumberOfBlocks, "economical")
+	if err != nil {
+		utils.WrapErrorLog(err.Error())
+		return utils.ReportError(c, "Cannot estimate fee rate", http.StatusInternalServerError)
+	}
+	var fRate models.FeeRate
+	err = json.Unmarshal(sv, &fRate)
+	if err != nil {
+		return utils.ReportError(c, "Cannot estimate fee rate", http.StatusInternalServerError)
+	}
+	utils.ReportMessage(fmt.Sprintf("Fee rate: %f", fRate.Feerate))
+
+	feeRate := int(fRate.Feerate / 1024 * 100000000)
+	utils.ReportMessage(fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord inscribe --dry-run --fee-rate %d %s", feeRate, fileName))
+	s, err := cmd.CallJSON[models.Inscribe]("bash", "-c", fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord inscribe --dry-run --fee-rate %d %s", feeRate, fileName))
+	if err != nil {
+		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
+	}
+	return c.Status(fiber.StatusOK).JSON(s)
 }
 
 // Send inscription godoc
@@ -218,8 +295,8 @@ func getFeeRate(c *fiber.Ctx) error {
 }
 
 // Get new address godoc
-// @Summary      Mint Inscription
-// @Description  Mint Inscription
+// @Summary      Get new BTC Address
+// @Description  Get new BTC Address
 // @Tags         Daemon
 // @Accept       json
 // @Produce      json

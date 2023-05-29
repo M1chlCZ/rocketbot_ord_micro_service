@@ -27,7 +27,7 @@ const docTemplate = `{
     "paths": {
         "/address": {
             "get": {
-                "description": "Mint Inscription",
+                "description": "Get new BTC Address",
                 "consumes": [
                     "application/json"
                 ],
@@ -37,12 +37,64 @@ const docTemplate = `{
                 "tags": [
                     "Daemon"
                 ],
-                "summary": "Mint Inscription",
+                "summary": "Get new BTC Address",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/models.NewAddressRequest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    }
+                }
+            }
+        },
+        "/estimate": {
+            "post": {
+                "description": "Estimate inscription cost !!!Don't use this method!!!",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Inscriptions"
+                ],
+                "summary": "Estimate inscription cost !!!Don't use this method!!!",
+                "parameters": [
+                    {
+                        "description": "Image URL from hosting service and number of blocks",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.EstimateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Inscribe"
                         }
                     },
                     "400": {
@@ -554,6 +606,17 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.EstimateRequest": {
+            "type": "object",
+            "properties": {
+                "blocks": {
+                    "type": "integer"
+                },
+                "imageUrl": {
                     "type": "string"
                 }
             }

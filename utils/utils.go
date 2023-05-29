@@ -1,20 +1,16 @@
 package utils
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 	"io"
 	"log"
-	"math"
 	"os"
 	"runtime"
 	"strings"
 	"sync"
-	"time"
 )
 
 const (
@@ -44,41 +40,6 @@ func GetENV(key string) string {
 func ReturnError(err string) error {
 	go logToFile(fmt.Sprintf("[ERROR] %s ", err))
 	return errors.New(err)
-}
-
-//func CreateToken(userId uint64) (string, error) {
-//	var err error
-//	jwtKey := GetENV("JWT_KEY")
-//
-//	atClaims := jwt.MapClaims{}
-//	atClaims["authorized"] = true
-//	atClaims["idUser"] = userId
-//	atClaims["exp"] = time.Now().Add(time.Hour * 24).Unix()
-//	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
-//	token, err := at.SignedString([]byte(jwtKey))
-//	if err != nil {
-//		return "", err
-//	}
-//	return token, nil
-//}
-
-func GenerateSecureToken(length int) string {
-	b := make([]byte, length)
-	if _, err := rand.Read(b); err != nil {
-		return ""
-	}
-	return hex.EncodeToString(b)
-}
-
-func ScheduleFunc(f func(), interval time.Duration) *time.Ticker {
-	ticker := time.NewTicker(interval)
-	go func() {
-		for range ticker.C {
-			f()
-
-		}
-	}()
-	return ticker
 }
 
 var m sync.Mutex
@@ -127,37 +88,8 @@ func ReportError(c *fiber.Ctx, err string, statusCode int) error {
 	return c.Status(statusCode).JSON(json)
 }
 
-func ReportOK(c *fiber.Ctx) error {
-	return c.JSON(fiber.Map{
-		STATUS: OK,
-		ERROR:  false,
-	})
-}
-
-func ReportSuccess(message string) {
-	go logToFile(fmt.Sprintf("[SUCCESS] %s", message))
-}
-
 func ReportMessage(message string) {
 	go logToFile(fmt.Sprintf("[INFO] %s", message))
-}
-
-func round(num float64) int {
-	return int(num + math.Copysign(0.5, num))
-}
-
-func ToFixed(num float64, precision int) float64 {
-	output := math.Pow(10, float64(precision))
-	return float64(round(num*output)) / output
-}
-
-func TrimQuotes(s string) string {
-	if len(s) >= 2 {
-		if c := s[len(s)-1]; s[0] == c && (c == '"' || c == '\'') {
-			return s[1 : len(s)-1]
-		}
-	}
-	return s
 }
 
 func GetHomeDir() string {
@@ -174,25 +106,6 @@ func GetHomeDir() string {
 		}
 	}
 	return os.Getenv("HOME")
-}
-
-func FmtDuration(d time.Duration) string {
-	d = d.Round(time.Second)
-	h := d / time.Hour
-	d -= h * time.Hour
-	m := d / time.Minute
-	d -= m * time.Minute
-	s := d / time.Second
-	return fmt.Sprintf("%02d:%02d:%02d", h, m, s)
-}
-
-func ArrContains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
 }
 
 func FileExists(filePath string) bool {

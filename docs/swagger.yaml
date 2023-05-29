@@ -9,6 +9,13 @@ definitions:
       status:
         type: string
     type: object
+  models.EstimateRequest:
+    properties:
+      blocks:
+        type: integer
+      imageUrl:
+        type: string
+    type: object
   models.FeeResponse:
     properties:
       feeRate:
@@ -204,7 +211,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Mint Inscription
+      description: Get new BTC Address
       produces:
       - application/json
       responses:
@@ -224,9 +231,43 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.ErrorHTTP'
-      summary: Mint Inscription
+      summary: Get new BTC Address
       tags:
       - Daemon
+  /estimate:
+    post:
+      consumes:
+      - application/json
+      description: Estimate inscription cost !!!Don't use this method!!!
+      parameters:
+      - description: Image URL from hosting service and number of blocks
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/models.EstimateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Inscribe'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+      summary: Estimate inscription cost !!!Don't use this method!!!
+      tags:
+      - Inscriptions
   /feerate:
     get:
       consumes:
