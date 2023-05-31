@@ -25,6 +25,13 @@ definitions:
       status:
         type: string
     type: object
+  models.HttpSuccess:
+    properties:
+      hasError:
+        type: boolean
+      message:
+        type: string
+    type: object
   models.Inscribe:
     properties:
       commit:
@@ -63,6 +70,34 @@ definitions:
       feeRate:
         type: integer
       format:
+        type: string
+    type: object
+  models.NSFWInscriptionsResponse:
+    properties:
+      hasError:
+        type: boolean
+      inscriptions:
+        items:
+          $ref: '#/definitions/models.NSFWTable'
+        type: array
+      status:
+        type: string
+    type: object
+  models.NSFWTable:
+    properties:
+      approved:
+        type: boolean
+      bc_address:
+        type: string
+      content_link:
+        type: string
+      id:
+        type: integer
+      link:
+        type: string
+      ord_id:
+        type: string
+      tx_id:
         type: string
     type: object
   models.NewAddressRequest:
@@ -362,6 +397,75 @@ paths:
           schema:
             $ref: '#/definitions/models.ErrorHTTP'
       summary: List of Inscriptions in the wallet
+      tags:
+      - Inscriptions
+  /inscriptions/nsfw:
+    get:
+      consumes:
+      - application/json
+      description: List of Inscriptions in the wallet waiting to be approved
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.NSFWInscriptionsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+      summary: List of Inscriptions in the wallet waiting to be approved
+      tags:
+      - Inscriptions
+  /inscriptions/nsfw/approve:
+    get:
+      consumes:
+      - application/json
+      description: Approve Inscription from NSFW list
+      parameters:
+      - description: ORD id
+        in: query
+        name: ord
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.HttpSuccess'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+      summary: Approve Inscription from NSFW list
       tags:
       - Inscriptions
   /mint:

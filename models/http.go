@@ -38,6 +38,12 @@ type ListInscriptionsResponse struct {
 	Inscriptions []TxTable `json:"inscriptions"`
 }
 
+type NSFWInscriptionsResponse struct {
+	HasError     bool        `json:"hasError"`
+	Status       string      `json:"status"`
+	Inscriptions []NSFWTable `json:"inscriptions"`
+}
+
 type FeeResponse struct {
 	HasError bool   `json:"hasError"`
 	FeeRate  int    `json:"feeRate"`

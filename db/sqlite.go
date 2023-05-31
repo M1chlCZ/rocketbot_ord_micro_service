@@ -20,7 +20,7 @@ var Database *Client
 
 const dbName string = ".data/.datb"
 
-const dbVersion int = 1
+const dbVersion int = 2
 
 func InitDB() error {
 	if Database != nil {
@@ -77,6 +77,16 @@ func initTables(db *sqlx.DB) {
 		"content_link" TEXT NOT NULL		
 	  );`
 
+	createNsfwTable := `CREATE TABLE IF NOT EXISTS NSFW_ORD (
+		"id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,	
+		"ord_id" TEXT NOT NULL,
+		"tx_id" TEXT NOT NULL UNIQUE,	
+		"bc_address" TEXT NOT NULL,
+		"link" TEXT NOT NULL,
+		"content_link" TEXT NOT NULL,		
+		"approved" INTEGER NOT NULL DEFAULT 0
+	  );`
+
 	createListTxTablet := `
 CREATE TABLE IF NOT EXISTS LIST_TRANSACTIONS (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -114,22 +124,21 @@ CREATE TABLE IF NOT EXISTS LIST_TRANSACTIONS (
 
 	switch i {
 	case 0, 1:
-
-	//	err = ExecQuery(db, "ALTER TABLE DAEMON_TABLE ADD COLUMN conf TEXT NOT NULL DEFAULT ('')")
-	//	err = ExecQuery(db, "ALTER TABLE DAEMON_TABLE ADD COLUMN ip TEXT NOT NULL DEFAULT ('')")
-	//	break
-	//case 2:
-	//	err = ExecQuery(db, "ALTER TABLE DAEMON_TABLE ADD COLUMN mn_port INT NOT NULL DEFAULT 0")
-	//	break
-	//case 3:
-	//	err = ExecQuery(db, "ALTER TABLE DAEMON_TABLE ADD COLUMN wallet_passphrase TEXT")
-	//	break
-	//case 4:
-	//	err = ExecQuery(db, "ALTER TABLE JWT_TABLE ADD COLUMN refreshToken TEXT")
-	//	break
-	//case 5:
-	//	err = ExecQuery(db, "ALTER TABLE STAKING_DAEMON_TABLE ADD COLUMN ip TEXT DEFAULT ('127.0.0.1')")
-	//	break
+		err = ExecQuery(db, createNsfwTable)
+		//err = ExecQuery(db, "ALTER TABLE DAEMON_TABLE ADD COLUMN ip TEXT NOT NULL DEFAULT ('')")
+		break
+	case 2:
+		//err = ExecQuery(db, "ALTER TABLE DAEMON_TABLE ADD COLUMN mn_port INT NOT NULL DEFAULT 0")
+		break
+	case 3:
+		//err = ExecQuery(db, "ALTER TABLE DAEMON_TABLE ADD COLUMN wallet_passphrase TEXT")
+		break
+	case 4:
+		//err = ExecQuery(db, "ALTER TABLE JWT_TABLE ADD COLUMN refreshToken TEXT")
+		break
+	case 5:
+		//err = ExecQuery(db, "ALTER TABLE STAKING_DAEMON_TABLE ADD COLUMN ip TEXT DEFAULT ('127.0.0.1')")
+		break
 	default:
 		break
 	}

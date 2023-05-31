@@ -25,35 +25,38 @@ func GetInscriptions() {
 		vout, err := strconv.Atoi(txid[1])
 		if err != nil {
 			utils.WrapErrorLog(err.Error())
-			return
+			continue
 		}
 		sv, err := coind.WrapDaemon(dm, 1, "gettransaction", txid[0], false, true)
 		if err != nil {
 			utils.WrapErrorLog(err.Error())
-			return
+			continue
 		}
 		var info models.GetTransaction
 		errJson := json.Unmarshal(sv, &info)
 		if errJson != nil {
 			utils.WrapErrorLog(errJson.Error())
-			return
-		}
-
-		_, err = utils.DownloadImage(ins.Inscription)
-		if err != nil {
-			utils.WrapErrorLog(err.Error())
+			continue
 		}
 		contentLink := fmt.Sprintf("https://ordinals.com/content/%s", ins.Inscription)
 		addr := info.Decoded.Vout[vout].ScriptPubKey.Address
-		_, err = db.InsertSQl(`INSERT INTO TRANSACTIONS_ORD (tx_id, ord_id, bc_address, link, content_link) 
-									VALUES (?,?, ?, ?, ?)`, txid[0], ins.Inscription, addr, ins.Explorer, contentLink)
+		_, err = utils.DownloadImage(ins.Inscription)
 
 		if err != nil {
-			if strings.Contains(err.Error(), "UNIQUE constraint failed") {
-				continue
-			}
+			_, _ = db.InsertSQl(`INSERT INTO NSFW_ORD (tx_id, ord_id, bc_address, link, content_link) 
+									VALUES (?,?, ?, ?, ?)`, txid[0], ins.Inscription, addr, ins.Explorer, contentLink)
 			utils.WrapErrorLog(err.Error())
 			continue
+		} else {
+			_, err = db.InsertSQl(`INSERT INTO TRANSACTIONS_ORD (tx_id, ord_id, bc_address, link, content_link) 
+									VALUES (?,?, ?, ?, ?)`, txid[0], ins.Inscription, addr, ins.Explorer, contentLink)
+			if err != nil {
+				if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+					continue
+				}
+				utils.WrapErrorLog(err.Error())
+				continue
+			}
 		}
 
 	}

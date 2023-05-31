@@ -264,6 +264,111 @@ const docTemplate = `{
                 }
             }
         },
+        "/inscriptions/nsfw": {
+            "get": {
+                "description": "List of Inscriptions in the wallet waiting to be approved",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Inscriptions"
+                ],
+                "summary": "List of Inscriptions in the wallet waiting to be approved",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of items per page",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.NSFWInscriptionsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    }
+                }
+            }
+        },
+        "/inscriptions/nsfw/approve": {
+            "get": {
+                "description": "Approve Inscription from NSFW list",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Inscriptions"
+                ],
+                "summary": "Approve Inscription from NSFW list",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ORD id",
+                        "name": "ord",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.HttpSuccess"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    }
+                }
+            }
+        },
         "/mint": {
             "post": {
                 "description": "Mint an Inscription",
@@ -635,6 +740,17 @@ const docTemplate = `{
                 }
             }
         },
+        "models.HttpSuccess": {
+            "type": "object",
+            "properties": {
+                "hasError": {
+                    "type": "boolean"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "models.Inscribe": {
             "type": "object",
             "properties": {
@@ -693,6 +809,49 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "format": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.NSFWInscriptionsResponse": {
+            "type": "object",
+            "properties": {
+                "hasError": {
+                    "type": "boolean"
+                },
+                "inscriptions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.NSFWTable"
+                    }
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.NSFWTable": {
+            "type": "object",
+            "properties": {
+                "approved": {
+                    "type": "boolean"
+                },
+                "bc_address": {
+                    "type": "string"
+                },
+                "content_link": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "link": {
+                    "type": "string"
+                },
+                "ord_id": {
+                    "type": "string"
+                },
+                "tx_id": {
                     "type": "string"
                 }
             }

@@ -25,12 +25,11 @@ mainloop:
 				continue mainloop
 			}
 			utils.ReportMessage(fmt.Sprintf("Converting %s to %s", file, fileNew))
-			o, err := exec.Command("bash", "-c", fmt.Sprintf("cwebp -q 95 -resize 500 500 ./data/%s -o ./data_final/%s", file, fileNew)).Output()
+			err := exec.Command("bash", "-c", fmt.Sprintf("cwebp -q 95 -resize 500 0 ./data/%s -o ./data_final/%s", file, fileNew)).Run()
 			if err != nil {
 				utils.WrapErrorLog(err.Error())
 				continue mainloop
 			}
-			utils.WrapErrorLog(string(o))
 		} else {
 			fileOld := strings.Split(file, ".")
 			fileNew := strings.ReplaceAll(file, fmt.Sprintf(".%s", fileOld[1]), ".webp")
@@ -38,12 +37,11 @@ mainloop:
 				continue mainloop
 			}
 			utils.ReportMessage(fmt.Sprintf("Converting %s to %s", file, fileNew))
-			o, err := exec.Command("bash", "-c", fmt.Sprintf("cwebp -q 95 -resize 500 500 ./data/%s -o ./data_final/%s", file, fileNew)).Output()
+			err := exec.Command("bash", "-c", fmt.Sprintf("cwebp -q 95 -resize 500 0 ./data/%s -o ./data_final/%s", file, fileNew)).Run()
 			if err != nil {
 				utils.WrapErrorLog(err.Error())
 				continue mainloop
 			}
-			utils.WrapErrorLog(string(o))
 		}
 	}
 	_ = exec.Command("bash", "-c", fmt.Sprintf(fmt.Sprintf("rm %s/api/data/*", utils.GetHomeDir()))).Run()

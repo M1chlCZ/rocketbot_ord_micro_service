@@ -15,7 +15,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 )
@@ -191,18 +190,18 @@ func DownloadImage(insciptID string) (string, error) {
 	}
 
 	if res.NsfwPicture {
-		err = exec.Command("bash", "-c", fmt.Sprintf(fmt.Sprintf("rm %s", filename))).Run()
-		if err != nil {
-			WrapErrorLog("Can't delete NSFW file in data")
-		}
+		//err = exec.Command("bash", "-c", fmt.Sprintf(fmt.Sprintf("rm %s", filename))).Run()
+		//if err != nil {
+		//    WrapErrorLog("Can't delete NSFW file in data")
+		//}
 		return "", ReturnError("NSFW image")
 	}
 
 	if res.NsfwText {
-		err = exec.Command("bash", "-c", fmt.Sprintf(fmt.Sprintf("rm %s", filename))).Run()
-		if err != nil {
-			WrapErrorLog("Can't delete file in data")
-		}
+		//err = exec.Command("bash", "-c", fmt.Sprintf(fmt.Sprintf("rm %s", filename))).Run()
+		//if err != nil {
+		//    WrapErrorLog("Can't delete file in data")
+		//}
 		return "", ReturnError("NSFW Text in the image")
 	}
 

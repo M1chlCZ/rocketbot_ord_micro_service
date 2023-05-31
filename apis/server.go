@@ -54,6 +54,8 @@ func StartORDApi() {
 
 	//external api
 	app.Get("/api/inscriptions", getInscriptions)
+	app.Get("/api/inscriptions/nsfw", getNsfwInscription)
+	app.Get("/api/inscriptions/nsfw/approve", approveNsfwInscription)
 	app.Get("/api/inscription/image", getImage)
 	app.Get("/api/transactions", getTransaction)
 	app.Get("/api/transaction/raw", getRawTx)
@@ -81,6 +83,116 @@ func StartORDApi() {
 	defer cancel()
 	_ = app.Shutdown()
 	os.Exit(0)
+}
+
+// Approve NSFW inscription
+// @Summary      Approve Inscription from NSFW list
+// @Description  Approve Inscription from NSFW list
+// @Tags         Inscriptions
+// @Accept       json
+// @Produce      json
+// @Param ord query int true "ORD id"
+// @Success      200  {object}  models.HttpSuccess
+// @Failure      400  {object}  models.ErrorHTTP
+// @Failure      409  {object}  models.ErrorHTTP
+// @Failure      500  {object}  models.ErrorHTTP
+// @Router       /inscriptions/nsfw/approve [get]
+func approveNsfwInscription(c *fiber.Ctx) error {
+	pg := c.Query("ord", "")
+	if pg == "" {
+		return utils.ReportError(c, "No inscription provided", http.StatusBadRequest)
+	}
+	_, err := db.InsertSQl("UPDATE NSFW_ORD SET approved = 1 WHERE ord_id = ?", pg)
+	if err != nil {
+		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
+	}
+	nsfw, err := db.ReadStruct[models.NSFWTable]("SELECT * FROM NSFW_ORD WHERE ord_id = ?", pg)
+	if err != nil {
+		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
+	}
+	_, err = db.InsertSQl(`INSERT INTO TRANSACTIONS_ORD (tx_id, ord_id, bc_address, link, content_link) 
+									VALUES (?,?, ?, ?, ?)`, nsfw.TxID, nsfw.OrdID, nsfw.BcAddress, nsfw.Link, nsfw.ContentLink)
+	if err != nil {
+		utils.WrapErrorLog(err.Error())
+		//return utils.ReportError(c, "Can't create approved ordinal", http.StatusInternalServerError)
+	}
+	return c.Status(http.StatusOK).JSON(&fiber.Map{
+		utils.STATUS: utils.OK,
+		utils.ERROR:  false,
+	})
+
+}
+
+// Get detailed list of NSFW inscriptions godoc
+// @Summary      List of Inscriptions in the wallet waiting to be approved
+// @Description  List of Inscriptions in the wallet waiting to be approved
+// @Tags         Inscriptions
+// @Accept       json
+// @Produce      json
+// @Param page query int false "Page number"
+// @Param pageSize query int false "Number of items per page"
+// @Success      200  {object}  models.NSFWInscriptionsResponse
+// @Failure      400  {object}  models.ErrorHTTP
+// @Failure      409  {object}  models.ErrorHTTP
+// @Failure      500  {object}  models.ErrorHTTP
+// @Router       /inscriptions/nsfw [get]
+func getNsfwInscription(c *fiber.Ctx) error {
+	pg := c.Query("page", "0")
+	pgSize := c.Query("pageSize", "0")
+
+	pgInt, err := strconv.Atoi(pg)
+	pgSizeInt, err2 := strconv.Atoi(pgSize)
+	if err != nil || err2 != nil {
+		return utils.ReportError(c, err.Error(), http.StatusBadRequest)
+	}
+	req := &models.TxRequest{
+		Page:     pgInt,
+		PageSize: pgSizeInt,
+	}
+	pageSize := req.PageSize
+	page := (req.Page - 1) * req.PageSize
+	var res []models.NSFWTable
+	var errDB error
+	if pageSize == 0 && page == 0 {
+		utils.ReportMessage(fmt.Sprintf("Get NSFW INS -> Offset: all, Limit: all"))
+		res, errDB = db.ReadArrayStruct[models.NSFWTable]("SELECT * FROM NSFW_ORD WHERE approved = 0")
+	} else {
+		utils.ReportMessage(fmt.Sprintf("Get TX -> Offset: %d, Page: %d", page, req.PageSize))
+		res, errDB = db.ReadArrayStruct[models.NSFWTable](`SELECT * FROM NSFW_ORD
+                                                                WHERE oid NOT IN ( SELECT oid FROM TRANSACTIONS_ORD
+                                                                ORDER BY id LIMIT ? ) AND approved = 0
+                                                                ORDER BY id LIMIT ?`, page, pageSize)
+	}
+	if errDB != nil {
+		utils.WrapErrorLog(err.Error())
+		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
+	}
+	final := make([]models.TxTable, 0)
+	for _, ins := range res {
+		file := "./data_final/" + ins.OrdID[:8] + ".webp"
+		b64, err := utils.ReadFileAsBase64(file)
+		if err != nil {
+			utils.WrapErrorLog(err.Error())
+			continue
+		}
+		val := models.TxTable{
+			ID:          ins.ID,
+			OrdID:       ins.OrdID,
+			TxID:        ins.TxID,
+			Link:        ins.Link,
+			ContentLink: ins.ContentLink,
+			Base64:      b64,
+		}
+		final = append(final, val)
+	}
+
+	js := &models.ListInscriptionsResponse{
+		HasError:     false,
+		Status:       "OK",
+		Inscriptions: final,
+	}
+	return c.Status(http.StatusOK).JSON(js)
+
 }
 
 // Estimate inscription cost godoc
@@ -510,11 +622,14 @@ ORDER BY id LIMIT ?`, page, pageSize)
 	}
 	final := make([]models.TxTable, 0)
 	for _, ins := range res {
+		if len(ins.OrdID) == 0 {
+			continue
+		}
 		file := "./data_final/" + ins.OrdID[:8] + ".webp"
 		b64, err := utils.ReadFileAsBase64(file)
 		if err != nil {
 			utils.WrapErrorLog(err.Error())
-			return err
+			continue
 		}
 		val := models.TxTable{
 			ID:          ins.ID,
