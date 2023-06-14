@@ -19,6 +19,9 @@ func ScanAndConvert() {
 mainloop:
 	for _, file := range files {
 		if !strings.Contains(file, ".webp") {
+			if strings.Contains(file, ".txt") {
+				continue mainloop
+			}
 			fileOld := strings.Split(file, ".")
 			fileNew := strings.ReplaceAll(file, fmt.Sprintf(".%s", fileOld[1]), ".webp")
 			if utils.FileExists(fmt.Sprintf("./data_final/%s", fileNew)) {

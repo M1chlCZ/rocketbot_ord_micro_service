@@ -334,7 +334,7 @@ const docTemplate = `{
                 "summary": "Approve Inscription from NSFW list",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "ORD id",
                         "name": "ord",
                         "in": "query",

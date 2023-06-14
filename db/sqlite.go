@@ -20,7 +20,7 @@ var Database *Client
 
 const dbName string = ".data/.datb"
 
-const dbVersion int = 2
+const dbVersion int = 3
 
 func InitDB() error {
 	if Database != nil {
@@ -70,8 +70,9 @@ func InitDB() error {
 func initTables(db *sqlx.DB) {
 	createTxTable := `CREATE TABLE IF NOT EXISTS TRANSACTIONS_ORD (
 		"id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,	
-		"ord_id" TEXT NOT NULL,
-		"tx_id" TEXT NOT NULL UNIQUE,	
+		"ord_id" TEXT NOT NULL UNIQUE,
+		"tx_id" TEXT NOT NULL,	
+		"file_format" TEXT NOT NULL DEFAULT 'image',
 		"bc_address" TEXT NOT NULL,
 		"link" TEXT NOT NULL,
 		"content_link" TEXT NOT NULL		
@@ -79,8 +80,9 @@ func initTables(db *sqlx.DB) {
 
 	createNsfwTable := `CREATE TABLE IF NOT EXISTS NSFW_ORD (
 		"id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,	
-		"ord_id" TEXT NOT NULL,
-		"tx_id" TEXT NOT NULL UNIQUE,	
+		"ord_id" TEXT NOT NULL UNIQUE,
+		"tx_id" TEXT NOT NULL,	
+		"file_format" TEXT NOT NULL DEFAULT 'image',
 		"bc_address" TEXT NOT NULL,
 		"link" TEXT NOT NULL,
 		"content_link" TEXT NOT NULL,		
@@ -113,6 +115,7 @@ CREATE TABLE IF NOT EXISTS LIST_TRANSACTIONS (
 
 	err := ExecQuery(db, createTxTable)
 	err = ExecQuery(db, createListTxTablet)
+	err = ExecQuery(db, createNsfwTable)
 	if err != nil {
 		utils.WrapErrorLog(err.Error())
 		return
@@ -128,7 +131,16 @@ CREATE TABLE IF NOT EXISTS LIST_TRANSACTIONS (
 		//err = ExecQuery(db, "ALTER TABLE DAEMON_TABLE ADD COLUMN ip TEXT NOT NULL DEFAULT ('')")
 		break
 	case 2:
-		//err = ExecQuery(db, "ALTER TABLE DAEMON_TABLE ADD COLUMN mn_port INT NOT NULL DEFAULT 0")
+		err := ExecQuery(db, `ALTER TABLE TRANSACTIONS_ORD ADD COLUMN 'file_format' TEXT NOT NULL DEFAULT 'image'`)
+		if err != nil {
+			utils.WrapErrorLog(err.Error())
+			return
+		}
+		err = ExecQuery(db, `ALTER TABLE NSFW_ORD ADD COLUMN 'file_format' TEXT NOT NULL DEFAULT 'image'`)
+		if err != nil {
+			utils.WrapErrorLog(err.Error())
+			return
+		}
 		break
 	case 3:
 		//err = ExecQuery(db, "ALTER TABLE DAEMON_TABLE ADD COLUMN wallet_passphrase TEXT")

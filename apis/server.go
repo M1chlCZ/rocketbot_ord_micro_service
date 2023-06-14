@@ -25,6 +25,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -91,7 +92,7 @@ func StartORDApi() {
 // @Tags         Inscriptions
 // @Accept       json
 // @Produce      json
-// @Param ord query int true "ORD id"
+// @Param ord query string true "ORD id"
 // @Success      200  {object}  models.HttpSuccess
 // @Failure      400  {object}  models.ErrorHTTP
 // @Failure      409  {object}  models.ErrorHTTP
@@ -169,7 +170,7 @@ func getNsfwInscription(c *fiber.Ctx) error {
 	}
 	final := make([]models.TxTable, 0)
 	for _, ins := range res {
-		file := "./data_final/" + ins.OrdID[:8] + ".webp"
+		file := fmt.Sprintf("./data_final/%s.%s", ins.OrdID[:8], utils.InlineIF[string](strings.Split(ins.FileFormat, "/")[0] == "image", "webp", "txt"))
 		b64, err := utils.ReadFileAsBase64(file)
 		if err != nil {
 			utils.WrapErrorLog(err.Error())
@@ -179,6 +180,8 @@ func getNsfwInscription(c *fiber.Ctx) error {
 			ID:          ins.ID,
 			OrdID:       ins.OrdID,
 			TxID:        ins.TxID,
+			FileFormat:  utils.InlineIF[string](strings.Split(ins.FileFormat, "/")[0] == "image", "image/webpwebp", "text/plain;charset=utf-8"),
+			BcAddress:   ins.BcAddress,
 			Link:        ins.Link,
 			ContentLink: ins.ContentLink,
 			Base64:      b64,
@@ -625,7 +628,7 @@ ORDER BY id LIMIT ?`, page, pageSize)
 		if len(ins.OrdID) == 0 {
 			continue
 		}
-		file := "./data_final/" + ins.OrdID[:8] + ".webp"
+		file := fmt.Sprintf("./data_final/%s.%s", ins.OrdID[:8], utils.InlineIF[string](strings.Split(ins.FileFormat, "/")[0] == "image", "webp", "txt"))
 		b64, err := utils.ReadFileAsBase64(file)
 		if err != nil {
 			utils.WrapErrorLog(err.Error())
@@ -635,6 +638,8 @@ ORDER BY id LIMIT ?`, page, pageSize)
 			ID:          ins.ID,
 			OrdID:       ins.OrdID,
 			TxID:        ins.TxID,
+			FileFormat:  utils.InlineIF[string](strings.Split(ins.FileFormat, "/")[0] == "image", "image/webp", "text/plain;charset=utf-8"),
+			BcAddress:   ins.BcAddress,
 			Link:        ins.Link,
 			ContentLink: ins.ContentLink,
 			Base64:      b64,
