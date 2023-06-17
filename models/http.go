@@ -22,6 +22,14 @@ type MintRequest struct {
 	Base64  string `json:"base64"`
 }
 
+type MintLaunchRequest struct {
+	ID      int64  `json:"id"`
+	Addr    string `json:"addr"`
+	FeeRate int    `json:"feeRate"`
+	Format  string `json:"format"`
+	Base64  string `json:"base64"`
+}
+
 type SendRequest struct {
 	FeeRate       int    `json:"feeRate"`
 	Address       string `json:"Address"`

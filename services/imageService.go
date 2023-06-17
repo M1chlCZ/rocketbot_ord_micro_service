@@ -20,6 +20,10 @@ mainloop:
 	for _, file := range files {
 		if !strings.Contains(file, ".webp") {
 			if strings.Contains(file, ".txt") {
+				err := copyFile(fmt.Sprintf("./data/%s", file), fmt.Sprintf("./data_final/%s", file))
+				if err != nil {
+					utils.WrapErrorLog(err.Error())
+				}
 				continue mainloop
 			}
 			fileOld := strings.Split(file, ".")

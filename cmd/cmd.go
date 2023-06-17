@@ -15,6 +15,9 @@ func CallJSON[T any](command string, args ...string) (T, error) {
 	var result T
 	r, err := exec.Command(command, args...).Output()
 	if err != nil {
+		if len(r) > 0 {
+			utils.WrapErrorLog(string(r))
+		}
 		return getZero[T](), err
 	}
 	err = json.Unmarshal(r, &result)

@@ -53,9 +53,8 @@ func GETRequest[T any](url string) (T, error) {
 	return data, nil
 }
 
-func POSTRequest[T any](endpoint string, data *fiber.Map) (T, error) {
+func POSTRequest[T any](urlPost string, data *fiber.Map) (T, error) {
 	var responseData T
-	urlPost := fmt.Sprintf("%s%s%s", ServerUrl, "/api/v1/", endpoint)
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return responseData, err
@@ -272,7 +271,6 @@ func SaveInscription(in models.WitnessData) (string, error) {
 
 	// Create a new file with a unique name in the current directory
 	filename := fmt.Sprintf("%s/api/data/%s.%s", GetHomeDir(), in.Txid[:8], format)
-	ReportMessage(fmt.Sprintf("Saving inscription %s format %s path %s", in.Txid, format, filename))
 	// Create the directory if it doesn't exist
 	dir := filepath.Dir(filename)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {

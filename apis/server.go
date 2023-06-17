@@ -12,6 +12,7 @@ import (
 	"api/models"
 	"api/services"
 	"api/utils"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -24,6 +25,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -61,6 +63,7 @@ func StartORDApi() {
 	app.Get("/api/transactions", getTransaction)
 	app.Get("/api/transaction/raw", getRawTx)
 	app.Post("/api/mint", mint)
+	app.Post("/api/inscription", createInscription)
 	app.Post("/api/estimate", estimate)
 	app.Post("/api/send", sendInscription)
 	app.Get("/api/address", getAddress)
@@ -84,6 +87,128 @@ func StartORDApi() {
 	defer cancel()
 	_ = app.Shutdown()
 	os.Exit(0)
+}
+
+func createInscription(c *fiber.Ctx) error {
+	var req models.MintLaunchRequest
+	err := c.BodyParser(&req)
+	if err != nil {
+		return utils.ReportError(c, err.Error(), http.StatusBadRequest)
+	}
+	utils.ReportMessage(fmt.Sprintf("Mint inscription id"))
+	if req.Format == "" {
+		return utils.ReportError(c, "Format is empty", http.StatusBadRequest)
+	}
+	if req.Base64 == "" {
+		return utils.ReportError(c, "Base64 is empty", http.StatusBadRequest)
+	}
+
+	if req.FeeRate == 0 {
+		return utils.ReportError(c, "Fee rate is empty", http.StatusBadRequest)
+	}
+
+	if req.Addr == "" {
+		return utils.ReportError(c, "Address is empty", http.StatusBadRequest)
+	}
+
+	//dm := services.GetDaemon()
+	//sv, err := coind.WrapDaemon(dm, 1, "estimatesmartfee", 5, "economical")
+	//if err != nil {
+	//	utils.WrapErrorLog(err.Error())
+	//	return utils.ReportError(c, "Cannot estimate fee rate", http.StatusInternalServerError)
+	//}
+	//var fRate models.FeeRate
+	//err = json.Unmarshal(sv, &fRate)
+	//if err != nil {
+	//	return utils.ReportError(c, "Cannot estimate fee rate", http.StatusInternalServerError)
+	//}
+	//
+	//feeRate := int(fRate.Feerate / 1024 * 100000000)
+	//fileType := strings.Split(req.Format, "/")[0]
+	filename := fmt.Sprintf("/home/dfwplay/api/data_ins/%s.%s", time.Now().Format("200601021504"), req.Format)
+	dir := filepath.Dir(filename)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		err := os.MkdirAll(dir, 0755)
+		if err != nil {
+			return utils.ReportError(c, "Can't create folder", http.StatusBadRequest)
+		}
+	}
+	// Check if file exists
+	if _, err := os.Stat(filename); err == nil {
+		return utils.ReportError(c, "Something stat", http.StatusBadRequest)
+	}
+
+	file, err := os.Create(filename)
+	if err != nil {
+		return utils.ReportError(c, "Can't create file", http.StatusBadRequest)
+	}
+
+	fl, err := utils.DecodePayload([]byte(req.Base64))
+	if err != nil {
+		return utils.ReportError(c, "Can't decode payload", http.StatusBadRequest)
+	}
+
+	_, err = io.Copy(file, bytes.NewReader(fl))
+	if err != nil {
+		return utils.ReportError(c, "Can't copy bytes", http.StatusBadRequest)
+	}
+
+	//tx := &grpcModels.NSFWRequest{
+	//    Base64:   req.Base64,
+	//    Filename: fmt.Sprintf("pic.%s", req.Format),
+	//}
+	//res, err := grpcClient.DetectNSFW(tx)
+	//if err != nil {
+	//    utils.WrapErrorLog(err.Error())
+	//    return utils.ReportError(c, "Cannot check if NSFW image", http.StatusInternalServerError)
+	//}
+	//
+	//if res.NsfwPicture {
+	//    err = exec.Command("bash", "-c", fmt.Sprintf(fmt.Sprintf("rm %s", filename))).Run()
+	//    if err != nil {
+	//        utils.WrapErrorLog("Can't delete file in data")
+	//    }
+	//    return utils.ReportError(c, "NSFW image", http.StatusConflict)
+	//}
+	//
+	//if res.NsfwText {
+	//    err = exec.Command("bash", "-c", fmt.Sprintf(fmt.Sprintf("rm %s", fileName))).Run()
+	//    if err != nil {
+	//        utils.WrapErrorLog("Can't delete file in data")
+	//    }
+	//    return utils.ReportError(c, "NSFW Text in the image", http.StatusConflict)
+	//}
+	go inscribe(req.ID, req.FeeRate, filename, req.Addr)
+
+	return c.Status(200).JSON(&fiber.Map{
+		utils.STATUS: utils.OK,
+		utils.ERROR:  false,
+	})
+}
+
+func inscribe(id int64, feeRate int, filename, destination string) {
+	defer os.Remove(filename)
+	utils.ReportMessage(fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord inscribe --destination %s --fee-rate %d %s", destination, feeRate, filename))
+	s, err := cmd.CallJSON[models.Inscribe]("bash", "-c", fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file /home/dfwplay/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord inscribe --destination %s --fee-rate %d %s", destination, feeRate, filename))
+	if err != nil {
+		utils.WrapErrorLog(err.Error())
+		_, err := utils.POSTRequest[models.ErrorHTTP]("https://pretest.rocketbot.pro/api/api/v1/inscription/error", &fiber.Map{
+			"error": err.Error(),
+			"id":    id,
+		})
+		utils.WrapErrorLog(err.Error())
+		return
+
+	}
+	utils.ReportMessage(fmt.Sprintf("Inscription created: %v", s))
+	_, err = utils.POSTRequest[models.ErrorHTTP]("https://pretest.rocketbot.pro/api/api/v1/inscription/confirm", &fiber.Map{
+		"commit":      s.Commit,
+		"inscription": s.Inscription,
+		"reveal":      s.Reveal,
+		"fees":        s.Fees,
+		"id":          id,
+	})
+	utils.WrapErrorLog(err.Error())
 }
 
 // Approve NSFW inscription

@@ -45,17 +45,7 @@ func GetInscriptions() {
 			utils.WrapErrorLog(err.Error())
 			continue
 		}
-		//sv, err := coind.WrapDaemon(dm, 1, "gettransaction", currentTX, false, true)
-		//if err != nil {
-		//    utils.WrapErrorLog(err.Error())
-		//    continue
-		//}
-		//var infoDM models.GetTransaction
-		//errJson := json.Unmarshal(sv, &info)
-		//if errJson != nil {
-		//    utils.WrapErrorLog(errJson.Error())
-		//    continue
-		//}
+
 		_, errNsfw := utils.SaveInscription(*r)
 
 		if errNsfw != nil {
