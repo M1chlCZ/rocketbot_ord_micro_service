@@ -31,6 +31,7 @@ type MintLaunchRequest struct {
 }
 
 type SendRequest struct {
+	ID            int64  `json:"id"`
 	FeeRate       int    `json:"feeRate"`
 	Address       string `json:"Address"`
 	InscriptionID string `json:"InscriptionID"`

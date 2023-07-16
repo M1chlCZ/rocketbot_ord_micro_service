@@ -12,9 +12,14 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"strconv"
 	"strings"
+	"sync"
 )
 
+var s sync.Mutex
+
 func GetInscriptions() {
+	s.Lock()
+	defer s.Unlock()
 	//dm := GetDaemon()
 	utils.ReportMessage(" = = Get Inscriptions = = ")
 	callString, err := cmd.CallArrayJSON[models.Inscriptions]("bash", "-c", "/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord wallet inscriptions")
@@ -66,7 +71,7 @@ func GetInscriptions() {
 		}
 
 	}
-	ScanAndConvert()
+	go ScanAndConvert()
 	utils.ReportMessage("Inscriptions saved into db")
 }
 

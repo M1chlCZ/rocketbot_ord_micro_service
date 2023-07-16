@@ -28,6 +28,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -186,29 +187,42 @@ func createInscription(c *fiber.Ctx) error {
 	})
 }
 
+var inscriptionMutex sync.Mutex
+
 func inscribe(id int64, feeRate int, filename, destination string) {
-	defer os.Remove(filename)
-	utils.ReportMessage(fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord inscribe --destination %s --fee-rate %d %s", destination, feeRate, filename))
-	s, err := cmd.CallJSON[models.Inscribe]("bash", "-c", fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file /home/dfwplay/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord inscribe --destination %s --fee-rate %d %s", destination, feeRate, filename))
+	inscriptionMutex.Lock()
+	defer inscriptionMutex.Unlock()
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			utils.WrapErrorLog(err.Error())
+		}
+	}(filename)
+	s, err := cmd.CallJSON[models.Inscribe]("bash", "-c", fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file /home/dfwplay/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord wallet inscribe --destination %s --fee-rate %d %s", destination, feeRate, filename))
 	if err != nil {
 		utils.WrapErrorLog(err.Error())
-		_, err := utils.POSTRequest[models.ErrorHTTP]("https://pretest.rocketbot.pro/api/api/v1/inscription/error", &fiber.Map{
+		_, errWeb := utils.POSTRequest[models.ErrorHTTP]("https://rocket.art/api/api/v1/inscription/error", &fiber.Map{
 			"error": err.Error(),
 			"id":    id,
 		})
-		utils.WrapErrorLog(err.Error())
+		if errWeb != nil {
+			utils.WrapErrorLog(errWeb.Error())
+		}
 		return
 
 	}
 	utils.ReportMessage(fmt.Sprintf("Inscription created: %v", s))
-	_, err = utils.POSTRequest[models.ErrorHTTP]("https://pretest.rocketbot.pro/api/api/v1/inscription/confirm", &fiber.Map{
+	_, errWeb := utils.POSTRequest[models.ErrorHTTP]("https://rocket.art/api/api/v1/inscription/confirm", &fiber.Map{
 		"commit":      s.Commit,
 		"inscription": s.Inscription,
 		"reveal":      s.Reveal,
 		"fees":        s.Fees,
 		"id":          id,
 	})
-	utils.WrapErrorLog(err.Error())
+	if errWeb != nil {
+		utils.WrapErrorLog(errWeb.Error())
+	}
+	return
 }
 
 // Approve NSFW inscription
@@ -592,22 +606,27 @@ func sendInscription(c *fiber.Ctx) error {
 	if req.FeeRate == 0 {
 		return utils.ReportError(c, "FeeRate estimation error", http.StatusBadRequest)
 	}
-	if req.InscriptionID == "" {
-		return utils.ReportError(c, "Inscription id is empty", http.StatusBadRequest)
-	}
 
-	s, err := cmd.CallJSON[models.Inscribe]("bash", "-c", fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord wallet send --fee-rate %d %s %s", req.FeeRate, req.Address, req.InscriptionID))
+	s, err := cmd.CallString("bash", "-c", fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord wallet send --fee-rate %d %s %s", req.FeeRate, req.Address, req.InscriptionID))
 	if err != nil {
+		utils.WrapErrorLog(err.Error())
+		_, errWeb := utils.POSTRequest[models.ErrorHTTP]("https://rocket.art/api/api/v1/transfer/error", &fiber.Map{
+			"error": err.Error(),
+			"id":    req.ID,
+		})
+		if errWeb != nil {
+			utils.WrapErrorLog(errWeb.Error())
+		}
 		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
-	}
 
-	err = exec.Command("bash", "-c", fmt.Sprintf(fmt.Sprintf("rm %s/api/data_final/%s.webp", utils.GetHomeDir(), req.InscriptionID[:8]))).Run()
-	if err != nil {
-		utils.WrapErrorLog("Can't delete file in data_final")
 	}
-	err = exec.Command("bash", "-c", fmt.Sprintf(fmt.Sprintf("rm %s/api/data/%s.*", utils.GetHomeDir(), req.InscriptionID[:8]))).Run()
-	if err != nil {
-		utils.WrapErrorLog("Can't delete file in data")
+	utils.ReportMessage(fmt.Sprintf("Ordinal sent: %v", s))
+	_, errWeb := utils.POSTRequest[models.ErrorHTTP]("https://rocket.art/api/api/v1/transfer/confirm", &fiber.Map{
+		"tx_id": s,
+		"id":    req.ID,
+	})
+	if errWeb != nil {
+		utils.WrapErrorLog(errWeb.Error())
 	}
 
 	return c.Status(http.StatusOK).JSON(s)
@@ -749,28 +768,34 @@ ORDER BY id LIMIT ?`, page, pageSize)
 		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
 	}
 	final := make([]models.TxTable, 0)
+	var wg sync.WaitGroup
+	wg.Add(len(res))
 	for _, ins := range res {
-		if len(ins.OrdID) == 0 {
-			continue
-		}
-		file := fmt.Sprintf("./data_final/%s.%s", ins.OrdID[:8], utils.InlineIF[string](strings.Split(ins.FileFormat, "/")[0] == "image", "webp", "txt"))
-		b64, err := utils.ReadFileAsBase64(file)
-		if err != nil {
-			utils.WrapErrorLog(err.Error())
-			continue
-		}
-		val := models.TxTable{
-			ID:          ins.ID,
-			OrdID:       ins.OrdID,
-			TxID:        ins.TxID,
-			FileFormat:  utils.InlineIF[string](strings.Split(ins.FileFormat, "/")[0] == "image", "image/webp", "text/plain;charset=utf-8"),
-			BcAddress:   ins.BcAddress,
-			Link:        ins.Link,
-			ContentLink: ins.ContentLink,
-			Base64:      b64,
-		}
-		final = append(final, val)
+		go func(ins models.TxTable) {
+			defer wg.Done()
+			if len(ins.OrdID) == 0 {
+				return
+			}
+			file := fmt.Sprintf("./data_final/%s.%s", ins.OrdID[:8], utils.InlineIF[string](strings.Split(ins.FileFormat, "/")[0] == "image", "webp", "txt"))
+			b64, err := utils.ReadFileAsBase64(file)
+			if err != nil {
+				utils.WrapErrorLog(err.Error())
+				return
+			}
+			val := models.TxTable{
+				ID:          ins.ID,
+				OrdID:       ins.OrdID,
+				TxID:        ins.TxID,
+				FileFormat:  utils.InlineIF[string](strings.Split(ins.FileFormat, "/")[0] == "image", "image/webp", "text/plain;charset=utf-8"),
+				BcAddress:   ins.BcAddress,
+				Link:        ins.Link,
+				ContentLink: ins.ContentLink,
+				Base64:      b64,
+			}
+			final = append(final, val)
+		}(ins)
 	}
+	wg.Wait()
 
 	js := &models.ListInscriptionsResponse{
 		HasError:     false,

@@ -32,7 +32,7 @@ mainloop:
 				continue mainloop
 			}
 			utils.ReportMessage(fmt.Sprintf("Converting %s to %s", file, fileNew))
-			err := exec.Command("bash", "-c", fmt.Sprintf("cwebp -q 95 -resize 500 0 ./data/%s -o ./data_final/%s", file, fileNew)).Run()
+			err := exec.Command("bash", "-c", fmt.Sprintf("cwebp -q 50 -resize 500 0 ./data/%s -o ./data_final/%s", file, fileNew)).Run()
 			if err != nil {
 				utils.WrapErrorLog(err.Error())
 				continue mainloop
@@ -44,7 +44,7 @@ mainloop:
 				continue mainloop
 			}
 			utils.ReportMessage(fmt.Sprintf("Converting %s to %s", file, fileNew))
-			err := exec.Command("bash", "-c", fmt.Sprintf("cwebp -q 95 -resize 500 0 ./data/%s -o ./data_final/%s", file, fileNew)).Run()
+			err := exec.Command("bash", "-c", fmt.Sprintf("cwebp -q 50 -resize 500 0 ./data/%s -o ./data_final/%s", file, fileNew)).Run()
 			if err != nil {
 				utils.WrapErrorLog(err.Error())
 				continue mainloop

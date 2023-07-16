@@ -263,111 +263,158 @@ func SendBackupToServer(filePath string) error {
 }
 
 func SaveInscription(in models.WitnessData) (string, error) {
-	contentType := in.FileType
-	dataType := strings.Split(contentType, "/")[0]
-	fileFormat := strings.Split(contentType, "/")[1]
-	// Content Type: eg: image/png, decide if it is a picture or not
-	format := strings.Split(contentType, "/")[1]
+	errChain := make(chan error, 1)
+	returnedFilename := make(chan string, 1)
+	go func() {
+		defer close(errChain)
+		defer close(returnedFilename)
 
-	// Create a new file with a unique name in the current directory
-	filename := fmt.Sprintf("%s/api/data/%s.%s", GetHomeDir(), in.Txid[:8], format)
-	// Create the directory if it doesn't exist
-	dir := filepath.Dir(filename)
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		err := os.MkdirAll(dir, 0755)
-		if err != nil {
-			return "", err
-		}
-	}
+		contentType := in.FileType
+		dataType := strings.Split(contentType, "/")[0]
+		fileFormat := strings.Split(contentType, "/")[1]
+		// Content Type: eg: image/png, decide if it is a picture or not
+		format := strings.Split(contentType, "/")[1]
 
-	// Check if file exists
-	if _, err := os.Stat(filename); err == nil {
-		return "", nil
-	}
-
-	file, err := os.Create(filename)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
-
-	fl, err := DecodePayload([]byte(in.B64))
-	if err != nil {
-		return "", err
-	}
-
-	_, err = io.Copy(file, bytes.NewReader(fl))
-	if err != nil {
-		return "", err
-	}
-
-	if dataType != "image" {
-		return "txt", nil
-	}
-	fileToOpen := filename
-
-	if fileFormat == "webp" {
-		f0, err := os.Open(filename)
-		if err != nil {
-			WrapErrorLog(err.Error())
-			return "", err
-		}
-		defer f0.Close()
-		img0, err := webp.Decode(f0)
-		if err != nil {
-			WrapErrorLog(err.Error())
-			return "", err
-		}
-		filepng := fmt.Sprintf("%s/api/data/%s.%s", GetHomeDir(), in.Txid[:8], "png")
-		pngFile, err := os.Create(filepng)
-		if err != nil {
-			fmt.Println(err)
-		}
-		err = png.Encode(pngFile, img0)
-		if err != nil {
-			fmt.Println(err)
-		}
-		defer func() {
-			err := os.Remove(filepng)
+		// Create a new file with a unique name in the current directory
+		filename := fmt.Sprintf("%s/api/data/%s.%s", GetHomeDir(), in.Txid[:8], format)
+		// Create the directory if it doesn't exist
+		dir := filepath.Dir(filename)
+		if _, err := os.Stat(dir); os.IsNotExist(err) {
+			err := os.MkdirAll(dir, 0755)
 			if err != nil {
-				log.Println(err.Error())
+				errChain <- err
+				return
 			}
-		}()
-		fileToOpen = filepng
-	}
+		}
 
-	fileBytes, err := os.ReadFile(fileToOpen)
-	if err != nil {
+		// Check if file exists
+		if _, err := os.Stat(filename); err == nil {
+			errChain <- err
+			return
+		}
+
+		file, err := os.Create(filename)
+		if err != nil {
+			errChain <- err
+			return
+		}
+		defer func(file *os.File) {
+			err := file.Close()
+			if err != nil {
+				//errChain <- err
+				return
+			}
+		}(file)
+
+		fl, err := DecodePayload([]byte(in.B64))
+		if err != nil {
+			errChain <- err
+			return
+		}
+
+		_, err = io.Copy(file, bytes.NewReader(fl))
+		if err != nil {
+			errChain <- err
+			return
+		}
+
+		if dataType != "image" {
+			returnedFilename <- "txt"
+			return
+		}
+		fileToOpen := filename
+
+		if fileFormat == "webp" {
+			f0, err := os.Open(filename)
+			if err != nil {
+				WrapErrorLog(err.Error())
+				errChain <- err
+				return
+				//return "", err
+			}
+			defer func(f0 *os.File) {
+				err := f0.Close()
+				if err != nil {
+					//errChain <- err
+					return
+				}
+			}(f0)
+			img0, err := webp.Decode(f0)
+			if err != nil {
+				WrapErrorLog(err.Error())
+				errChain <- err
+				return
+				//return "", err
+			}
+			filepng := fmt.Sprintf("%s/api/data/%s.%s", GetHomeDir(), in.Txid[:8], "png")
+			pngFile, err := os.Create(filepng)
+			if err != nil {
+				fmt.Println(err)
+				errChain <- err
+				return
+			}
+			err = png.Encode(pngFile, img0)
+			if err != nil {
+				fmt.Println(err)
+				errChain <- err
+				return
+			}
+			defer func() {
+				err := os.Remove(filepng)
+				if err != nil {
+					log.Println(err.Error())
+					//errChain <- err
+					return
+				}
+			}()
+			fileToOpen = filepng
+		}
+
+		fileBytes, err := os.ReadFile(fileToOpen)
+		if err != nil {
+			errChain <- err
+			return
+		}
+
+		base64 := EncodePayload(fileBytes)
+
+		tx := &grpcModels.NSFWRequest{
+			Base64:   base64,
+			Filename: fmt.Sprintf("pic.%s", fileFormat),
+		}
+		res, err := grpcClient.DetectNSFW(tx)
+		if err != nil {
+			WrapErrorLog(err.Error())
+			errChain <- err
+			return
+			//return "", err
+		}
+
+		if res.NsfwPicture {
+			//err = exec.Command("bash", "-c", fmt.Sprintf(fmt.Sprintf("rm %s", filename))).Run()
+			//if err != nil {
+			//    WrapErrorLog("Can't delete NSFW file in data")
+			//}
+			errChain <- ReturnError("NSFW image")
+			return
+			//return "", ReturnError("NSFW image")
+		}
+
+		if res.NsfwText {
+			//err = exec.Command("bash", "-c", fmt.Sprintf(fmt.Sprintf("rm %s", filename))).Run()
+			//if err != nil {
+			//    WrapErrorLog("Can't delete file in data")
+			//}
+			errChain <- ReturnError("NSFW Text in the image")
+			return
+			//return "", ReturnError("NSFW Text in the image")
+		}
+	}()
+
+	select {
+	case err := <-errChain:
 		return "", err
+	case filename := <-returnedFilename:
+		return filename, nil
 	}
-
-	base64 := EncodePayload(fileBytes)
-
-	tx := &grpcModels.NSFWRequest{
-		Base64:   base64,
-		Filename: fmt.Sprintf("pic.%s", fileFormat),
-	}
-	res, err := grpcClient.DetectNSFW(tx)
-	if err != nil {
-		WrapErrorLog(err.Error())
-		return "", err
-	}
-
-	if res.NsfwPicture {
-		//err = exec.Command("bash", "-c", fmt.Sprintf(fmt.Sprintf("rm %s", filename))).Run()
-		//if err != nil {
-		//    WrapErrorLog("Can't delete NSFW file in data")
-		//}
-		return "", ReturnError("NSFW image")
-	}
-
-	if res.NsfwText {
-		//err = exec.Command("bash", "-c", fmt.Sprintf(fmt.Sprintf("rm %s", filename))).Run()
-		//if err != nil {
-		//    WrapErrorLog("Can't delete file in data")
-		//}
-		return "", ReturnError("NSFW Text in the image")
-	}
-
-	return "webp", nil
 }
