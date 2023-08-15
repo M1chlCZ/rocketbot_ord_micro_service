@@ -46,6 +46,9 @@ func CallString(command string, args ...string) (string, error) {
 
 	r, err := exec.Command(command, args...).Output()
 	if err != nil {
+		if len(r) > 0 {
+			utils.WrapErrorLog(string(r))
+		}
 		return "", err
 	}
 	return string(r), nil
@@ -57,6 +60,9 @@ func CallArrayJSON[T any](command string, args ...string) ([]T, error) {
 	var result []T
 	r, err := exec.Command(command, args...).Output()
 	if err != nil {
+		if len(r) > 0 {
+			utils.WrapErrorLog(string(r))
+		}
 		utils.WrapErrorLog(err.Error())
 		return getZeroArray[T](), err
 	}

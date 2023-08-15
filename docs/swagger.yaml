@@ -9,6 +9,24 @@ definitions:
       status:
         type: string
     type: object
+  models.EstimateQualityRequest:
+    properties:
+      fee_rate:
+        type: integer
+      quality:
+        type: string
+      url_pic:
+        type: string
+    type: object
+  models.EstimateQualityResponse:
+    properties:
+      base64:
+        type: string
+      btc_amount:
+        type: number
+      size:
+        type: number
+    type: object
   models.EstimateRequest:
     properties:
       blocks:
@@ -91,6 +109,8 @@ definitions:
         type: string
       content_link:
         type: string
+      file_format:
+        type: string
       id:
         type: integer
       link:
@@ -168,6 +188,8 @@ definitions:
         type: string
       feeRate:
         type: integer
+      id:
+        type: integer
     type: object
   models.TestPicReq:
     properties:
@@ -194,6 +216,8 @@ definitions:
       bc_address:
         type: string
       content_link:
+        type: string
+      file_format:
         type: string
       id:
         type: integer
@@ -301,6 +325,40 @@ paths:
           schema:
             $ref: '#/definitions/models.ErrorHTTP'
       summary: Estimate inscription cost !!!Don't use this method!!!
+      tags:
+      - Inscriptions
+  /fee/quality/estimate:
+    post:
+      consumes:
+      - application/json
+      description: Estimate inscription cost based on quality
+      parameters:
+      - description: Image URL from hosting service and number of blocks
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/models.EstimateQualityRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.EstimateQualityResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorHTTP'
+      summary: Estimate inscription cost based on quality
       tags:
       - Inscriptions
   /feerate:

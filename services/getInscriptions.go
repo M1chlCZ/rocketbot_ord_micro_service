@@ -30,21 +30,22 @@ func GetInscriptions() {
 	for _, ins := range callString {
 		txid := strings.Split(ins.Inscription, "i")
 		currentTX := strings.Split(ins.Location, ":")[0]
-		vout, err := strconv.Atoi(strings.Split(ins.Location, ":")[1])
+		voutArr := strings.Split(ins.Location, ":")
+		vout, err := strconv.Atoi(strings.Split(ins.Location, ":")[len(voutArr)-1])
 		if err != nil {
-			utils.WrapErrorLog(err.Error())
-			continue
+			vout = 0
 		}
 
 		utils.ReportMessage("--------------------")
 		utils.ReportMessage(fmt.Sprintf("ins: %s location: %s", txid, currentTX))
-		info, err := utils.GETRequest[models.RawTX](fmt.Sprintf("https://blockstream.info/api/tx/%s", txid[0]))
+		info, err := utils.GETRequest[models.RawTX](fmt.Sprintf("https://blockstream.info/api/tx/%s", currentTX))
 		if err != nil {
 			utils.WrapErrorLog(err.Error())
 			continue
 		}
+		utils.ReportMessage(fmt.Sprintf("Address: %s", info.Vout[vout].ScriptpubkeyAddress))
 		contentLink := fmt.Sprintf("https://ordinals.com/content/%s", ins.Inscription)
-		utils.ReportMessage(fmt.Sprintf("Address: %v", info.Vout[vout].ScriptpubkeyAddress))
+
 		r, err := getWitnessData(txid[0], vout)
 		if err != nil {
 			utils.WrapErrorLog(err.Error())
@@ -139,6 +140,10 @@ func getWitnessData(txID string, vout int) (*models.WitnessData, error) {
 				// Handle the data differently depending on the MIME type
 				switch mimeType {
 				case "text/plain;charset=utf-8":
+					fileType = mimeType
+					b64 = base64.StdEncoding.EncodeToString(dataBytes)
+					break
+				case "text/html;charset=utf-8":
 					fileType = mimeType
 					b64 = base64.StdEncoding.EncodeToString(dataBytes)
 					break

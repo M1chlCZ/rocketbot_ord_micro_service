@@ -118,6 +118,58 @@ const docTemplate = `{
                 }
             }
         },
+        "/fee/quality/estimate": {
+            "post": {
+                "description": "Estimate inscription cost based on quality",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Inscriptions"
+                ],
+                "summary": "Estimate inscription cost based on quality",
+                "parameters": [
+                    {
+                        "description": "Image URL from hosting service and number of blocks",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.EstimateQualityRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.EstimateQualityResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorHTTP"
+                        }
+                    }
+                }
+            }
+        },
         "/feerate": {
             "get": {
                 "description": "Get fee rate for transaction",
@@ -715,6 +767,34 @@ const docTemplate = `{
                 }
             }
         },
+        "models.EstimateQualityRequest": {
+            "type": "object",
+            "properties": {
+                "fee_rate": {
+                    "type": "integer"
+                },
+                "quality": {
+                    "type": "string"
+                },
+                "url_pic": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.EstimateQualityResponse": {
+            "type": "object",
+            "properties": {
+                "base64": {
+                    "type": "string"
+                },
+                "btc_amount": {
+                    "type": "number"
+                },
+                "size": {
+                    "type": "number"
+                }
+            }
+        },
         "models.EstimateRequest": {
             "type": "object",
             "properties": {
@@ -842,6 +922,9 @@ const docTemplate = `{
                 "content_link": {
                     "type": "string"
                 },
+                "file_format": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -959,6 +1042,9 @@ const docTemplate = `{
                 },
                 "feeRate": {
                     "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
                 }
             }
         },
@@ -1000,6 +1086,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "content_link": {
+                    "type": "string"
+                },
+                "file_format": {
                     "type": "string"
                 },
                 "id": {

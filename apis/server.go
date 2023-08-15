@@ -14,18 +14,21 @@ import (
 	"api/utils"
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/swagger"
 	"io"
+	"log"
 	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -69,6 +72,7 @@ func StartORDApi() {
 	app.Post("/api/send", sendInscription)
 	app.Get("/api/address", getAddress)
 	app.Get("/api/feerate", getFeeRate)
+	app.Post("/api/fee/quality/estimate", EstimateFeeQuality)
 
 	app.Post("api/nsfw", testPic)
 
@@ -198,6 +202,7 @@ func inscribe(id int64, feeRate int, filename, destination string) {
 			utils.WrapErrorLog(err.Error())
 		}
 	}(filename)
+	utils.ReportMessage(fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file /home/dfwplay/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord wallet inscribe --destination %s --fee-rate %d %s", destination, feeRate, filename))
 	s, err := cmd.CallJSON[models.Inscribe]("bash", "-c", fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file /home/dfwplay/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord wallet inscribe --destination %s --fee-rate %d %s", destination, feeRate, filename))
 	if err != nil {
 		utils.WrapErrorLog(err.Error())
@@ -713,7 +718,7 @@ func mint(c *fiber.Ctx) error {
 		}
 		return utils.ReportError(c, "NSFW Text in the image", http.StatusConflict)
 	}
-
+	utils.ReportMessage(fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord inscribe --fee-rate %d %s", req.FeeRate, fileName))
 	s, err := cmd.CallJSON[models.Inscribe]("bash", "-c", fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300/wallet/ord --wallet ord inscribe --fee-rate %d %s", req.FeeRate, fileName))
 	if err != nil {
 		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
@@ -755,13 +760,13 @@ func getInscriptions(c *fiber.Ctx) error {
 	var errDB error
 	if pageSize == 0 && page == 0 {
 		utils.ReportMessage(fmt.Sprintf("Get TX -> Offset: all, Limit: all"))
-		res, errDB = db.ReadArrayStruct[models.TxTable]("SELECT * FROM TRANSACTIONS_ORD")
+		res, errDB = db.ReadArrayStruct[models.TxTable]("SELECT * FROM TRANSACTIONS_ORD ORDER BY CAST(id AS INTEGER) DESC")
 	} else {
 		utils.ReportMessage(fmt.Sprintf("Get TX -> Offset: %d, Page: %d", page, req.PageSize))
 		res, errDB = db.ReadArrayStruct[models.TxTable](`SELECT * FROM TRANSACTIONS_ORD
 WHERE oid NOT IN ( SELECT oid FROM TRANSACTIONS_ORD
-                   ORDER BY id LIMIT ? )
-ORDER BY id LIMIT ?`, page, pageSize)
+                   ORDER BY CAST(id AS INTEGER) DESC LIMIT ? )
+ LIMIT ?`, page, pageSize)
 	}
 	if errDB != nil {
 		utils.WrapErrorLog(err.Error())
@@ -796,6 +801,10 @@ ORDER BY id LIMIT ?`, page, pageSize)
 		}(ins)
 	}
 	wg.Wait()
+
+	sort.Slice(final, func(i, j int) bool {
+		return final[i].ID > final[j].ID
+	})
 
 	js := &models.ListInscriptionsResponse{
 		HasError:     false,
@@ -868,4 +877,94 @@ ORDER BY id LIMIT ?`, page, pageSize)
 	//	return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
 	//}
 	return c.JSON(tx)
+}
+
+// EstimateFeeQuality Estimate inscription cost based on quality godoc
+// @Summary      Estimate inscription cost based on quality
+// @Description  Estimate inscription cost based on quality
+// @Tags         Inscriptions
+// @Accept       json
+// @Produce      json
+// @Param 		 data body models.EstimateQualityRequest true "Image URL from hosting service and number of blocks"
+// @Success      200  {object}  models.EstimateQualityResponse
+// @Failure      400  {object}  models.ErrorHTTP
+// @Failure      409  {object}  models.ErrorHTTP
+// @Failure      500  {object}  models.ErrorHTTP
+// @Router       /fee/quality/estimate [post]
+func EstimateFeeQuality(c *fiber.Ctx) error {
+	var req models.EstimateQualityRequest
+	err := c.BodyParser(&req)
+	if err != nil {
+		return utils.ReportError(c, err.Error(), http.StatusBadRequest)
+	}
+	url := req.UrlPic      // url of the image
+	quality := req.Quality // Quality to be passed to cwebp
+
+	// Ensure temp folder exists
+	err = os.MkdirAll("temp", os.ModePerm)
+	if err != nil {
+		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
+	}
+
+	// Create a temp file in the temp folder
+	tempFile, err := os.CreateTemp("temp", "download-*.webp")
+	if err != nil {
+		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
+	}
+	defer os.Remove(tempFile.Name()) // clean up
+
+	// Download the image
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	// Write the body to file
+	_, err = io.Copy(tempFile, resp.Body)
+	if err != nil {
+		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
+	}
+	tempFile.Close()
+
+	// Change filename for webp file
+	outputFile := tempFile.Name() + "-processed"
+
+	// Convert image to webp
+	x := exec.Command("cwebp", "-q", quality, "-resize", "500", "0", tempFile.Name(), "-o", outputFile)
+	err = x.Run()
+	if err != nil {
+		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
+	}
+	defer os.Remove(outputFile)
+
+	// Read the webp image file
+	data, err := os.ReadFile(outputFile)
+	if err != nil {
+		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
+	}
+
+	// Convert to base64
+	str := base64.StdEncoding.EncodeToString(data)
+
+	// Get the size of the file in bytes. Use FileInfo from os package.
+	fileInfo, err := os.Stat(outputFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Size of file in bytes
+	sizeInBytes := fileInfo.Size()
+
+	//calculate ordinal fee
+	feeRate := req.FeeRate
+	cin := 2.0
+	cout := 3.0
+	precalc := 144.5 + (cin * 57.5) + (cout * 43.0) + float64(sizeInBytes)/3.977*float64(feeRate) + 10000
+	btcAmount := precalc / 100_000_000.0 * 1.05
+
+	return c.Status(fiber.StatusOK).JSON(&fiber.Map{
+		"size":       sizeInBytes,
+		"base64":     str,
+		"btc_amount": btcAmount,
+	})
 }
