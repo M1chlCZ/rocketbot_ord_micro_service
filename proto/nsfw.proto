@@ -15,3 +15,24 @@ message NSFWResponse {
   bool nsfwPicture = 1;
   bool nsfwText = 2;
 }
+
+service Log {
+  rpc Log (LogRequest) returns (LogResponse) {}
+  rpc Ping (PingRequest) returns (PingResponse) {}
+}
+
+message LogRequest {
+  string message = 1;
+}
+
+message LogResponse {
+  bool success = 1;
+}
+
+message PingRequest {
+  bool ping = 1;
+}
+
+message PingResponse {
+  bool pong = 1;
+}

@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"api/grpcClient"
+	"api/grpcModels"
 	"api/utils"
 	"encoding/json"
 	"os/exec"
@@ -13,11 +15,14 @@ func CallJSON[T any](command string, args ...string) (T, error) {
 	s.Lock()
 	defer s.Unlock()
 	var result T
-	r, err := exec.Command(command, args...).Output()
+	r, err := exec.Command(command, args...).CombinedOutput()
 	if err != nil {
+		errMessage := ""
 		if len(r) > 0 {
-			utils.WrapErrorLog(string(r))
+			errMessage = string(r)
 		}
+		utils.WrapErrorLog(errMessage)
+		_, _ = grpcClient.LogIssue(&grpcModels.LogRequest{Message: errMessage})
 		return getZero[T](), err
 	}
 	err = json.Unmarshal(r, &result)
@@ -29,8 +34,14 @@ func CallJSON[T any](command string, args ...string) (T, error) {
 
 func CallJSONNonLock[T any](command string, args ...string) (T, error) {
 	var result T
-	r, err := exec.Command(command, args...).Output()
+	r, err := exec.Command(command, args...).CombinedOutput()
 	if err != nil {
+		errMessage := ""
+		if len(r) > 0 {
+			errMessage = string(r)
+		}
+		utils.WrapErrorLog(errMessage)
+		_, _ = grpcClient.LogIssue(&grpcModels.LogRequest{Message: errMessage})
 		return getZero[T](), err
 	}
 	err = json.Unmarshal(r, &result)
@@ -44,11 +55,14 @@ func CallString(command string, args ...string) (string, error) {
 	s.Lock()
 	defer s.Unlock()
 
-	r, err := exec.Command(command, args...).Output()
+	r, err := exec.Command(command, args...).CombinedOutput()
 	if err != nil {
+		errMessage := ""
 		if len(r) > 0 {
-			utils.WrapErrorLog(string(r))
+			errMessage = string(r)
 		}
+		utils.WrapErrorLog(errMessage)
+		_, _ = grpcClient.LogIssue(&grpcModels.LogRequest{Message: errMessage})
 		return "", err
 	}
 	return string(r), nil
@@ -58,12 +72,14 @@ func CallArrayJSON[T any](command string, args ...string) ([]T, error) {
 	s.Lock()
 	defer s.Unlock()
 	var result []T
-	r, err := exec.Command(command, args...).Output()
+	r, err := exec.Command(command, args...).CombinedOutput()
 	if err != nil {
+		errMessage := ""
 		if len(r) > 0 {
-			utils.WrapErrorLog(string(r))
+			errMessage = string(r)
 		}
-		utils.WrapErrorLog(err.Error())
+		utils.WrapErrorLog(errMessage)
+		_, _ = grpcClient.LogIssue(&grpcModels.LogRequest{Message: errMessage})
 		return getZeroArray[T](), err
 	}
 	err = json.Unmarshal(r, &result)

@@ -44,6 +44,13 @@ func StartORDApi() {
 	}
 	go services.GetInscriptions()
 	go daemon.StartCron()
+	go func() {
+		_, err := grpcClient.PingMainNode(&grpcModels.PingRequest{Ping: true})
+		if err != nil {
+			utils.WrapErrorLog(err.Error())
+			return
+		}
+	}()
 
 	app := fiber.New(fiber.Config{
 		AppName:       "Rocketbot ORD API",
