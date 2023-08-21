@@ -4,6 +4,7 @@ type Inscriptions struct {
 	Inscription string `json:"inscription"`
 	Location    string `json:"location"`
 	Explorer    string `json:"explorer"`
+	Postage     int    `json:"postage"`
 }
 
 type Inscribe struct {
