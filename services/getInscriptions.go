@@ -16,62 +16,72 @@ import (
 )
 
 var s sync.Mutex
+var dbLock sync.Mutex
 
 func GetInscriptions() {
 	s.Lock()
 	defer s.Unlock()
 	//dm := GetDaemon()
-	utils.ReportMessage(" = = Get Inscriptions = = ")
+	utils.ReportMessage(" - Get Inscriptions - ")
 	callString, err := cmd.CallArrayJSON[models.Inscriptions]("bash", "-c", "/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300 --wallet ord wallet inscriptions")
 	if err != nil {
 		utils.WrapErrorLog(err.Error())
 		return
 	}
+	var wg sync.WaitGroup
+	wg.Add(len(callString))
 	for _, ins := range callString {
-		txid := strings.Split(ins.Inscription, "i")
-		currentTX := strings.Split(ins.Location, ":")[0]
-		voutArr := strings.Split(ins.Location, ":")
-		vout, err := strconv.Atoi(strings.Split(ins.Location, ":")[len(voutArr)-1])
-		if err != nil {
-			vout = 0
-		}
-
-		utils.ReportMessage("--------------------")
-		utils.ReportMessage(fmt.Sprintf("ins: %s location: %s", txid, currentTX))
-		info, err := utils.GETRequest[models.RawTX](fmt.Sprintf("https://blockstream.info/api/tx/%s", currentTX))
-		if err != nil {
-			utils.WrapErrorLog(err.Error())
-			continue
-		}
-		utils.ReportMessage(fmt.Sprintf("Address: %s", info.Vout[vout].ScriptpubkeyAddress))
-		contentLink := fmt.Sprintf("https://ordinals.com/content/%s", ins.Inscription)
-
-		r, err := getWitnessData(txid[0], vout)
-		if err != nil {
-			utils.WrapErrorLog(err.Error())
-			continue
-		}
-
-		_, errNsfw := utils.SaveInscription(*r)
-
-		if errNsfw != nil {
-			utils.WrapErrorLog(errNsfw.Error())
-			_, _ = db.InsertSQl(`INSERT INTO NSFW_ORD (tx_id, file_format, ord_id, bc_address, link, content_link) 
-									VALUES (?, ?, ?, ?, ?, ?)`, currentTX, r.FileType, ins.Inscription, info.Vout[vout].ScriptpubkeyAddress, ins.Explorer, contentLink)
-			continue
-		} else {
-			_, err = db.InsertSQl(`INSERT INTO TRANSACTIONS_ORD (tx_id, file_format, ord_id, bc_address, link, content_link) 
-									VALUES (?,?, ?, ?, ?, ?)`, currentTX, r.FileType, ins.Inscription, info.Vout[vout].ScriptpubkeyAddress, ins.Explorer, contentLink)
+		go func(ins models.Inscriptions) {
+			defer wg.Done()
+			txid := strings.Split(ins.Inscription, "i")
+			currentTX := strings.Split(ins.Location, ":")[0]
+			voutArr := strings.Split(ins.Location, ":")
+			vout, err := strconv.Atoi(strings.Split(ins.Location, ":")[len(voutArr)-1])
 			if err != nil {
-				if strings.Contains(err.Error(), "UNIQUE constraint failed") {
-					continue
-				}
-				utils.WrapErrorLog(err.Error())
-				continue
+				vout = 0
 			}
-		}
 
+			//utils.ReportMessage(fmt.Sprintf("--------------------"))
+			//utils.ReportMessage(fmt.Sprintf("ins: %s location: %s", txid, currentTX))
+			info, err := utils.GETRequest[models.RawTX](fmt.Sprintf("https://blockstream.info/api/tx/%s", currentTX))
+			if err != nil {
+				utils.WrapErrorLog(err.Error())
+				return
+			}
+			contentLink := fmt.Sprintf("https://ordinals.com/content/%s", ins.Inscription)
+
+			r, err := getWitnessData(txid[0], vout)
+			if err != nil {
+				utils.WrapErrorLog(err.Error())
+				return
+			}
+			utils.ReportMessage(fmt.Sprintf("--------------------\nInscription: %s\nLocation: [%s]\nAddress: [%s]\nMimeType: [%s]\n", txid, currentTX, info.Vout[vout].ScriptpubkeyAddress, r.FileType))
+
+			_, errNsfw := utils.SaveInscription(*r)
+
+			if errNsfw != nil {
+				utils.WrapErrorLog(errNsfw.Error())
+				dbLock.Lock()
+				_, _ = db.InsertSQl(`INSERT INTO NSFW_ORD (tx_id, file_format, ord_id, bc_address, link, content_link) 
+									VALUES (?, ?, ?, ?, ?, ?)`, currentTX, r.FileType, ins.Inscription, info.Vout[vout].ScriptpubkeyAddress, ins.Explorer, contentLink)
+				dbLock.Unlock()
+				return
+			} else {
+				dbLock.Lock()
+				_, err = db.InsertSQl(`INSERT INTO TRANSACTIONS_ORD (tx_id, file_format, ord_id, bc_address, link, content_link) 
+									VALUES (?,?, ?, ?, ?, ?)`, currentTX, r.FileType, ins.Inscription, info.Vout[vout].ScriptpubkeyAddress, ins.Explorer, contentLink)
+				dbLock.Unlock()
+				if err != nil {
+					if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+						return
+					}
+					utils.WrapErrorLog(err.Error())
+					return
+				}
+			}
+		}(ins)
 	}
+	wg.Wait()
 	go ScanAndConvert()
 	utils.ReportMessage("Inscriptions saved into db")
 }
@@ -114,7 +124,7 @@ func getWitnessData(txID string, vout int) (*models.WitnessData, error) {
 				}
 
 				mimeType := string(mimeTypeBytes)
-				fmt.Printf("MIME type: %s\n", mimeType)
+				//fmt.Printf("MIME type: %s\n", mimeType)
 
 				// Decode the data
 				var dataBytes []byte
@@ -136,7 +146,7 @@ func getWitnessData(txID string, vout int) (*models.WitnessData, error) {
 
 					dataBytes = append(dataBytes, dataByte...)
 				}
-				utils.ReportMessage(fmt.Sprintf("MimeType: %s", mimeType))
+				//utils.ReportMessage(fmt.Sprintf("MimeType: %s", mimeType))
 				// Handle the data differently depending on the MIME type
 				switch mimeType {
 				case "text/plain;charset=utf-8":
