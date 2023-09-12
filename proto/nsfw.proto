@@ -19,6 +19,7 @@ message NSFWResponse {
 service Log {
   rpc Log (LogRequest) returns (LogResponse) {}
   rpc Ping (PingRequest) returns (PingResponse) {}
+  rpc NSFWAnn (NSFWAnnRequest) returns (NSFWAnnResponse) {}
 }
 
 message LogRequest {
@@ -35,4 +36,12 @@ message PingRequest {
 
 message PingResponse {
   bool pong = 1;
+}
+
+message NSFWAnnRequest {
+  string inscription = 1;
+}
+
+message NSFWAnnResponse {
+  bool success = 1;
 }

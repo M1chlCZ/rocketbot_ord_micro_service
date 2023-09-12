@@ -37,6 +37,20 @@ import (
 )
 
 func StartORDApi() {
+	//err := gen.New().Build(&gen.Config{
+	//	SearchDir:          "./",
+	//	MainAPIFile:        "./apis/server.go",
+	//	PropNamingStrategy: swag.CamelCase,
+	//	OutputDir:          "./docs",
+	//	OutputTypes:        []string{"json", "yaml"},
+	//	ParseDependency:    true,
+	//	// This is a swag/v2 field
+	//	GenerateOpenAPI3Doc: false,
+	//	ParseVendor:         true,
+	//})
+	//if err != nil {
+	//	log.Fatalf("Failed to generate swagger.json err: %v", err)
+	//}
 	err := db.InitDB()
 	if err != nil {
 		utils.WrapErrorLog(fmt.Sprintf("Error opening db: %s", err.Error()))

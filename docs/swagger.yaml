@@ -1,4 +1,17 @@
-basePath: /api
+consumes:
+- application/json
+- application/json
+- application/json
+- application/json
+- application/json
+- application/json
+- application/json
+- application/json
+- application/json
+- application/json
+- application/json
+- application/json
+- application/json
 definitions:
   models.ErrorHTTP:
     properties:
@@ -252,19 +265,9 @@ definitions:
       value:
         type: number
     type: object
-host: 89.116.25.234:7500
 info:
-  contact:
-    email: m1chlcz18@gmail.com
-    name: Michal Žídek
-    url: http://app.rocketbot.pro
-  description: Private API for ORD
-  license:
-    name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
-  termsOfService: http://swagger.io/terms/
-  title: Rocketbot ORD API
-  version: "1.0"
+  contact: {}
+  description: Estimate inscription cost based on quality
 paths:
   /address:
     get:
@@ -743,4 +746,18 @@ paths:
       summary: List of transactions in the BTC Core
       tags:
       - Transactions
+produces:
+- application/json
+- application/json
+- application/json
+- application/json
+- application/json
+- application/json
+- application/json
+- application/json
+- application/json
+- application/json
+- application/json
+- application/json
+- application/json
 swagger: "2.0"

@@ -3,6 +3,8 @@ package services
 import (
 	"api/cmd"
 	"api/db"
+	"api/grpcClient"
+	"api/grpcModels"
 	"api/models"
 	"api/utils"
 	"encoding/base64"
@@ -62,9 +64,17 @@ func GetInscriptions() {
 			if errNsfw != nil {
 				utils.WrapErrorLog(errNsfw.Error())
 				dbLock.Lock()
-				_, _ = db.InsertSQl(`INSERT INTO NSFW_ORD (tx_id, file_format, ord_id, bc_address, link, content_link) 
+				_, err = db.InsertSQl(`INSERT INTO NSFW_ORD (tx_id, file_format, ord_id, bc_address, link, content_link) 
 									VALUES (?, ?, ?, ?, ?, ?)`, currentTX, r.FileType, ins.Inscription, info.Vout[vout].ScriptpubkeyAddress, ins.Explorer, contentLink)
 				dbLock.Unlock()
+				if err != nil {
+					//utils.WrapErrorLog(err.Error())
+					return
+				}
+				req := &grpcModels.NSFWAnnRequest{
+					Inscription: ins.Inscription,
+				}
+				_, _ = grpcClient.NSFWReq(req)
 				return
 			} else {
 				dbLock.Lock()
