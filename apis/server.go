@@ -742,6 +742,19 @@ func mint(c *fiber.Ctx) error {
 	utils.ReportMessage(fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300 --wallet ord inscribe --fee-rate %d %s", req.FeeRate, fileName))
 	s, err := cmd.CallJSON[models.Inscribe]("bash", "-c", fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300 --wallet ord inscribe --fee-rate %d %s", req.FeeRate, fileName))
 	if err != nil {
+		if strings.Contains(strings.ToUpper(err.Error()), "EXIT STATUS 1") {
+			go func() {
+				err := exec.Command("bash", "-c", "systemctl --user restart bitcoin").Run()
+				if err != nil {
+					utils.WrapErrorLog(err.Error())
+				}
+				time.Sleep(120 * time.Second)
+				err = exec.Command("bash", "-c", "/home/dfwplay/bitcoin-cli loadwallet ord").Run()
+				if err != nil {
+					utils.WrapErrorLog(err.Error())
+				}
+			}()
+		}
 		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
 	}
 
