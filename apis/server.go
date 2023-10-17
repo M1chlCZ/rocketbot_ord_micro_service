@@ -655,6 +655,21 @@ func sendInscription(c *fiber.Ctx) error {
 		utils.WrapErrorLog(errWeb.Error())
 	}
 
+	go func() {
+		fileFormat := db.ReadValueEmpty[string]("SELECT file_format FROM NSFW_ORD WHERE ord_id = ?", req.InscriptionID)
+		_, err = db.InsertSQl("DELETE FROM TRANSACTIONS_ORD WHERE ord_id = ?", req.InscriptionID)
+		if err != nil {
+			utils.WrapErrorLog("Can't delete inscription from DB")
+			return
+		}
+		file := fmt.Sprintf("./data_final/%s.%s", req.InscriptionID[:8], utils.InlineIF[string](strings.Split(fileFormat, "/")[0] == "image", "webp", "txt"))
+		err = os.Remove(file)
+		if err != nil {
+			utils.WrapErrorLog("Error deleting inscription from file system")
+			return
+		}
+	}()
+
 	return c.Status(http.StatusOK).JSON(s)
 
 }
