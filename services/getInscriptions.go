@@ -25,7 +25,7 @@ func GetInscriptions() {
 	defer s.Unlock()
 	//dm := GetDaemon()
 	utils.ReportMessage(" - Get Inscriptions - ")
-	callString, err := cmd.CallArrayJSON[models.Inscriptions]("bash", "-c", "/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300 --wallet ord wallet inscriptions")
+	callString, err := cmd.CallArrayJSON[models.Inscriptions]("bash", "-c", "/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300  wallet inscriptions")
 	if err != nil {
 		utils.WrapErrorLog(err.Error())
 		return

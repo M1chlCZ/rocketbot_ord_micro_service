@@ -223,8 +223,8 @@ func inscribe(id int64, feeRate int, filename, destination string) {
 			utils.WrapErrorLog(err.Error())
 		}
 	}(filename)
-	utils.ReportMessage(fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file /home/dfwplay/.bitcoin/.cookie --rpc-url 127.0.0.1:12300 --wallet ord wallet inscribe --destination %s --fee-rate %d %s", destination, feeRate, filename))
-	s, err := cmd.CallJSON[models.Inscribe]("bash", "-c", fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file /home/dfwplay/.bitcoin/.cookie --rpc-url 127.0.0.1:12300 --wallet ord wallet inscribe --destination %s --fee-rate %d %s", destination, feeRate, filename))
+	utils.ReportMessage(fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file /home/dfwplay/.bitcoin/.cookie --rpc-url 127.0.0.1:12300 wallet inscribe --destination %s --fee-rate %d %s", destination, feeRate, filename))
+	s, err := cmd.CallJSON[models.Inscribe]("bash", "-c", fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file /home/dfwplay/.bitcoin/.cookie --rpc-url 127.0.0.1:12300  wallet inscribe --destination %s --fee-rate %d %s", destination, feeRate, filename))
 	if err != nil {
 		utils.WrapErrorLog(err.Error())
 		_, errWeb := utils.POSTRequest[models.ErrorHTTP]("https://rocket.art/api/api/v1/inscription/error", &fiber.Map{
@@ -429,8 +429,8 @@ func estimate(c *fiber.Ctx) error {
 	utils.ReportMessage(fmt.Sprintf("Fee rate: %f", fRate.Feerate))
 
 	feeRate := int(fRate.Feerate / 1024 * 100000000)
-	utils.ReportMessage(fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300 --wallet ord inscribe --dry-run --fee-rate %d %s", feeRate, fileName))
-	s, err := cmd.CallJSON[models.Inscribe]("bash", "-c", fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300 --wallet ord inscribe --dry-run --fee-rate %d %s", feeRate, fileName))
+	utils.ReportMessage(fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300  inscribe --dry-run --fee-rate %d %s", feeRate, fileName))
+	s, err := cmd.CallJSON[models.Inscribe]("bash", "-c", fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300  inscribe --dry-run --fee-rate %d --file %s", feeRate, fileName))
 	if err != nil {
 		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
 	}
@@ -590,7 +590,7 @@ func getAddress(c *fiber.Ctx) error {
 	type Address struct {
 		Address string `json:"address"`
 	}
-	addr, err := cmd.CallJSONNonLock[Address]("bash", "-c", "/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300 --wallet ord wallet receive")
+	addr, err := cmd.CallJSONNonLock[Address]("bash", "-c", "/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300  wallet receive")
 	if err != nil {
 		return utils.ReportError(c, err.Error(), http.StatusInternalServerError)
 	}
@@ -633,7 +633,7 @@ func sendInscription(c *fiber.Ctx) error {
 		return utils.ReportError(c, "FeeRate estimation error", http.StatusBadRequest)
 	}
 
-	s, err := cmd.CallString("bash", "-c", fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300 --wallet ord wallet send --fee-rate %d %s %s", req.FeeRate, req.Address, req.InscriptionID))
+	s, err := cmd.CallString("bash", "-c", fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300  wallet send --fee-rate %d %s %s", req.FeeRate, req.Address, req.InscriptionID))
 	if err != nil {
 		utils.WrapErrorLog(err.Error())
 		_, errWeb := utils.POSTRequest[models.ErrorHTTP]("https://rocket.art/api/api/v1/transfer/error", &fiber.Map{
@@ -754,8 +754,8 @@ func mint(c *fiber.Ctx) error {
 		}
 		return utils.ReportError(c, "NSFW Text in the image", http.StatusConflict)
 	}
-	utils.ReportMessage(fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300 --wallet ord inscribe --fee-rate %d %s", req.FeeRate, fileName))
-	s, err := cmd.CallJSON[models.Inscribe]("bash", "-c", fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300 --wallet ord inscribe --fee-rate %d %s", req.FeeRate, fileName))
+	utils.ReportMessage(fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300  inscribe --fee-rate %d --file %s", req.FeeRate, fileName))
+	s, err := cmd.CallJSON[models.Inscribe]("bash", "-c", fmt.Sprintf("/home/dfwplay/bin/ord --cookie-file ~/.bitcoin/.cookie --rpc-url 127.0.0.1:12300  inscribe --fee-rate %d --file %s", req.FeeRate, fileName))
 	if err != nil {
 		if strings.Contains(strings.ToUpper(err.Error()), "EXIT STATUS 1") {
 			go func() {
